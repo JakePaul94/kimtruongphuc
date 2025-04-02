@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity,PixelRatio ,StyleSheet} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 type NavbarProps = {
   title?: string;
@@ -14,8 +14,8 @@ export default function Navbar({
 }: NavbarProps) {
   return (
     <View
-      className="fixed top-0 h-24  border-b-1 w-full flex-col items-center justify-start bg-transparent "
-      style={{ elevation: 1 }}>
+      className="fixed top-0 h-32  border-b-1 w-full flex-col items-center justify-start bg-transparent "
+      style={styles.navbar}>
       <LinearGradient
         colors={['#f9fbfd', '#f7fdff']}
         className="h-8 w-full flex-row items-center justify-between px-4"
@@ -24,7 +24,7 @@ export default function Navbar({
       />
       <LinearGradient
         colors={['#ffffff', '#f3f3fc']}
-        className="h-16 w-full flex-row items-center justify-between px-4"
+        className="h-24 w-full flex-row items-center justify-between px-4"
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}>
         <View className="flex-row items-center gap-4">
@@ -34,7 +34,7 @@ export default function Navbar({
           />
           <Text className="text-lg font-bold text-black">{title}</Text>
         </View>
-        <View className="flex-row items-center">
+        <View className="flex-row items-center  " style={styles.navbarFooter}>
           <TouchableOpacity onPress={onNotificationPress}>
             <Ionicons name="notifications-outline" size={24} color="black" className="mr-4" />
           </TouchableOpacity>
@@ -46,3 +46,13 @@ export default function Navbar({
     </View>
   );
 }
+const styles = StyleSheet.create({
+  navbar: {
+    borderBottomWidth: 1 / PixelRatio.get(), 
+    borderBottomColor: '#e5e7eb', 
+    elevation: 1
+  },navbarFooter :{
+    borderBottomWidth: 1 / PixelRatio.get(), 
+    borderBottomColor: '#e5e7eb', 
+  }
+});

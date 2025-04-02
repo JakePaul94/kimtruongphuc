@@ -1,0 +1,22 @@
+{
+    "build": {
+      "preview": {
+        "android": {
+          "buildType": "apk",
+          "env": {
+            "EAS_SKIP_AUTO_FINGERPRINT": "1"
+          }
+        },
+        "cli": {
+          "appVersionSource": "local" 
+      },
+      "production": {
+        "android": {
+          "buildType": "app-bundle",
+          "env": {
+            "EAS_SKIP_AUTO_FINGERPRINT": "1"
+          }
+        }
+      }
+    }
+  }

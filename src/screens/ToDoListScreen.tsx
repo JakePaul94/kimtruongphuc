@@ -5,7 +5,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import Navbar from '../components/Navbar';
-
+import { MaterialIcons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { RootTabParamList } from '../navigation/BottomTabNavigator';
 
@@ -15,9 +15,9 @@ type Props = CompositeScreenProps<
 >;
 export default function TodoListScreen({ navigation }: Props) {
   return (
-    <View className="flex-1 items-center justify-start bg-white">
+    <View className="flex-1 items-center w-screen relative justify-start bg-white">
       <Navbar
-        title="Nguyễn Văn A"
+        title="Nguyễn Bình An"
         onNotificationPress={() => alert('Thông báo')}
         onMenuPress={() => alert('Mở menu')}
       />
@@ -37,7 +37,7 @@ export default function TodoListScreen({ navigation }: Props) {
           <View className="mt-2 rounded-lg bg-white p-3 shadow">
             <Text className="font-semibold">🧹 Nghiệm thu vệ sinh</Text>
             <Text className="text-gray-500">Hạn: 29/03/2025</Text>
-            <TouchableOpacity className="mt-2 rounded-lg bg-green-500 p-2">
+            <TouchableOpacity onPress={() => navigation.navigate('CleaningCheck')} className="mt-2 rounded-lg bg-green-500 p-2">
               <Text className="text-center text-white">Tiến Hành</Text>
             </TouchableOpacity>
           </View>
@@ -53,6 +53,7 @@ export default function TodoListScreen({ navigation }: Props) {
             </TouchableOpacity>
           </View>
         </View>
+        
       </ScrollView>
     </View>
   );
