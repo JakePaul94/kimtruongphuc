@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -17,7 +17,6 @@ export default function TodoListScreen({ navigation }: Props) {
   return (
     <View className="flex-1 items-center w-screen relative justify-start bg-white">
       <Navbar
-        title="Nguyễn Bình An"
         onNotificationPress={() => alert('Thông báo')}
         onMenuPress={() => alert('Mở menu')}
       />

@@ -5,7 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDateDDMMYY } from '~/utils/Helper';
+import { formatDateDDMMYY } from '~/utils/timeHelper';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CleaningCheck'>;
 
@@ -71,7 +71,7 @@ export default function CleaningCheckScreen({ navigation }: Props) {
                   mode: 'qr',
                   nameImg: key,
                   title: title,
-                  callback: handlePhotoCapture
+                  callback: handlePhotoCapture,
                 })
               }>
               <Text className="text-center font-bold text-white">📸 Chụp</Text>

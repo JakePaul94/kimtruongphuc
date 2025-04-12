@@ -13,7 +13,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { formatDateDDMMYY } from '~/utils/Helper';
+import { formatDateDDMMYY } from '~/utils/timeHelper';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'WaterQualityReport'>;
 

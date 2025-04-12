@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { RootTabParamList } from '../navigation/BottomTabNavigator';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -9,7 +9,6 @@ export default function DashBoardScreen({ navigation }: Props) {
   return (
     <View className="flex-1 items-center justify-start bg-white">
       <Navbar
-        title="Nguyễn Bình An"
         onNotificationPress={() => alert('Thông báo')}
         onMenuPress={() => alert('Mở menu')}
       />
