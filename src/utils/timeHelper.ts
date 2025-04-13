@@ -26,6 +26,14 @@ export function formatDateDDMMYY(date: Date): string {
 
   return `${day}/${month}/${year}`;
 }
+export const formatDateFromIsoToDDMMYY = (isoDateString?: string | null): string => {
+  if (!isoDateString) return '-';
+  const date = new Date(isoDateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng bắt đầu từ 0
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
 export const getTodayDateString = (): string => {
   const today = new Date();
   const year = today.getFullYear();

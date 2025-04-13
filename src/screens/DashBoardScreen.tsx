@@ -10,7 +10,6 @@ export default function DashBoardScreen({ navigation }: Props) {
     <View className="flex-1 items-center justify-start bg-white">
       <Navbar
         onNotificationPress={() => alert('Thông báo')}
-        onMenuPress={() => alert('Mở menu')}
       />
       <ScrollView className="w-full flex-1 bg-gray-100 p-4">
         {/* Thông báo quan trọng */}

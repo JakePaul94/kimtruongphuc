@@ -15,6 +15,8 @@ import BottomTabHR from './BottomTabHR';
 import BottomTabOfficeStaff from './BottomTabOfficeStaff';
 import MyProfileScreen from '~/screens/MyProfileScreen';
 import DeviceDetailScreen from '~/screens/devices/DeviceDetailScreen';
+import CreateIncidentReportScreen from '~/screens/incident/CreateIncidentReportScreen';
+import CleaningTaskExecutionScreen from '~/screens/roleBased/boilerWorker/CleaningTaskExecutionScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -29,8 +31,10 @@ export type RootStackParamList = {
   };
   ChangePassword: undefined;
   Loading: undefined;
-  Profile: undefined; 
-  DeviceDetail: { deviceId: number };// Thêm định nghĩa cho màn hình Loading
+  Profile: undefined;
+  DeviceDetail: { deviceId: number };
+  CreateIncidentReport: { deviceId: number };
+  CleaningTaskExecution: { cleaningTaskId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -55,11 +59,9 @@ export default function AppNavigator() {
       ) : !isAuthenticated ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
-        
         </>
       ) : (
         <>
-          
           {role === 'admin' && <Stack.Screen name="Main" component={BottomTabAdmin} />}
           {role === 'boiler_manager' && (
             <Stack.Screen name="Main" component={BottomTabBoilerManager} />
@@ -77,6 +79,8 @@ export default function AppNavigator() {
           <Stack.Screen name="CleaningCheck" component={CleaningCheckScreen} />
           <Stack.Screen name="PhotoCapture" component={PhotoCaptureScreen} />
           <Stack.Screen name="DeviceDetail" component={DeviceDetailScreen} />
+          <Stack.Screen name="CreateIncidentReport" component={CreateIncidentReportScreen} />
+          <Stack.Screen name="CleaningTaskExecution" component={CleaningTaskExecutionScreen} />
         </>
       )}
     </Stack.Navigator>
