@@ -2,33 +2,17 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { saveTokens, clearTokens } from '../utils/authToken';
-import { loginApi, logoutApi, changePasswordApi, getUserInfoApi } from '../apis/authApi';
+import { loginApi, logoutApi, changePasswordApi, getUserInfoApi, autoLoginApi } from '../apis/authApi';
 import { getIpAddress, getUserAgent } from '../utils/deviceInfo';
+import { UserAttributes } from '~/types/userType';
 
-type User = {
-  id: number;
-  fullName: string;
-  email: string;
-  role: string;
-  profilePicture?: string | null;
-  phoneNumber?: string | null;
-  department?: string | null;
-  firstLogin: boolean;
-  accountStatus?: string;
-  reportingManagerId?: number | null;
-  permissions?: string | null;
-  gender?: string | null;
-  dateOfBirth?: string | null;
-  address?: string | null;
-  country?: string | null;
-};
 
 type AuthState = {
   isAuthenticated: boolean;
-  user: User | null;
+  user: UserAttributes | null;
   loading: boolean;
   error: string | null;
-  firstLoginHandled: boolean;setFirstLoginHandled: (value: boolean) => void;
+  firstLoginHandled: boolean; setFirstLoginHandled: (value: boolean) => void;
   login: (identifier: string, password: string) => Promise<void>;
   tryAutoLogin: () => Promise<void>;
   logout: () => Promise<void>;
@@ -40,7 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: false,
   error: null,
-  firstLoginHandled: false,setFirstLoginHandled: (value) => set({ firstLoginHandled: value }),
+  firstLoginHandled: false, setFirstLoginHandled: (value) => set({ firstLoginHandled: value }),
   login: async (identifier, password) => {
     set({ loading: true, error: null });
     try {
@@ -50,9 +34,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       const response = await loginApi(identifier, password, ipAddress, userAgent, loginTimestamp);
       const { accessToken, refreshToken, user } = response.data;
-      console.log('Login response:', user);
       await saveTokens(accessToken, refreshToken);
-      set({loading: false , isAuthenticated: true, user });
+      set({ loading: false, isAuthenticated: true, user });
 
       if (user.firstLogin) {
         console.log('First login detected, redirecting to onboarding...');
@@ -61,10 +44,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (err: any) {
       if (err.response) {
         console.error('Login error response:', err.response.data); // 👉 Chi tiết lỗi từ server
-        set({loading: false , error: err.response.data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.' });
+        set({ loading: false, error: err.response.data.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.' });
       } else {
         console.error('Login error:', err);
-        set({loading: false , error: 'Lỗi không xác định. Vui lòng thử lại sau.' });
+        set({ loading: false, error: 'Lỗi không xác định. Vui lòng thử lại sau.' });
       }
     }
   },
@@ -76,14 +59,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ loading: false });
       return;
     }
-
+    const ipAddress = await getIpAddress();
+    const userAgent = getUserAgent();
+    const loginTimestamp = new Date();
     try {
-      const response = await getUserInfoApi();
-      set({ isAuthenticated: true, user: response.data });
+      const response = await autoLoginApi(savedRefreshToken, ipAddress, userAgent, loginTimestamp);
+      const { accessToken, refreshToken, user } = response.data;
+      await saveTokens(accessToken, refreshToken);
+      set({ loading: false, isAuthenticated: true, user });
     } catch (err) {
       console.log('Auto login failed:', err);
       await clearTokens();
-      set({ isAuthenticated: false, user: null });
+      set({ isAuthenticated: false, user: null ,error: String(err)|| 'Lỗi không xác định. Vui lòng thử lại sau.'});
     } finally {
       set({ loading: false });
     }

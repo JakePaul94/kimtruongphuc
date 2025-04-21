@@ -1,0 +1,37 @@
+export type DeviceAttributes = {
+    id: number;
+    deviceCode: string;
+    deviceName: string;
+    parentId: number | null;
+    boilerId?: number | null;
+    model?: string;
+    brand?: string;
+    origin?: string;
+    yearOfManufacture?: number;
+    serialNumber?: string;
+    usageStatus?: string;
+    installationDate?: Date;
+    warrantyExpiration?: Date;
+    imageUrl: string;
+    location?: string;
+    value?: number;
+    department?: string;
+    manager?: string;
+    maintenanceCycle?: string;
+    lastMaintenanceDate?: string;
+    nextMaintenanceDate?: string;
+    operatingHours?: number;
+    maintenanceHistory?: string;
+    depreciationValue?: number;
+    lastChecked?: string;
+    isUnderWarranty?: boolean;
+    locationDetails?: string;
+    isNeedMaintenance?: boolean;
+    lastInspectionDate?: string;
+    nextInspectionDate?: string;
+    inspectionHistory?: string;
+    inspectionStatus?: string;
+    createdAt?: string;
+    updatedAt?: string;
+}
+export type DeviceWithoutIdAttributes = Omit<DeviceAttributes, 'id'>;

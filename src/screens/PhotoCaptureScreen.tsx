@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, Alert } from 'react-native';
 import { Camera as ExpoCamera, CameraType, CameraView } from 'expo-camera';
-
+import AntDesign from '@expo/vector-icons/AntDesign';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useRoute } from '@react-navigation/native';
-
-import { cropImageFromRoi, getImageBase64, sendImageToServer } from '~/utils/ImageProccessing';
+import  QrCodeModule   from '~/native-modules/QRCodeReader';
+import { cropImageFromRoi, readQrCodeFromUri } from '~/utils/ImageProccessing';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { uploadImage } from '~/apis/uploadApi';
 type Props = NativeStackScreenProps<RootStackParamList, 'PhotoCapture'>;
 const { width, height } = Dimensions.get('window');
 
@@ -16,7 +17,7 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
   const route = useRoute<Props['route']>();
-  const { mode, nameImg, title, callback } = route.params;
+  const { mode, cleaningTaskLocation, callback } = route.params;
   const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
   const [croppedPhotoUri, setCroppedPhotoUri] = useState<string | undefined>(undefined);
   useEffect(() => {
@@ -32,7 +33,8 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
         Không có quyền truy cập camera ,Vui lòng vào cài đặt cấp quyền camera cho thiết bị.
       </Text>
     );
-  const [roiWidth, roiHeight] = mode === 'qr' ? [60, 60] : mode === 'roi' ? [75, 100] : [0, 0];
+  const [roiWidth, roiHeight] =
+    mode === 'cleaning' ? [60, 60] : mode === 'water-report-with-AI' ? [75, 100] : [0, 0];
   const [cameraViewWidth, cameraViewHeight] = [width, (width * 4) / 3];
   const takePhotoHandle = async () => {
     if (cameraRef.current) {
@@ -49,37 +51,33 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
           width: roi_width,
           height: roi_height,
         });
-
+        console.log('bat dua chup anh', croppedPhoto);
         if (croppedPhoto) {
           setCroppedPhotoUri(croppedPhoto);
-          const result = await sendImageToServer(croppedPhoto, mode);
-          if (mode == 'qr' && result) {
-            if (result == title) {
-              
-                callback?.({
-                  photoUri: photo.uri,
-                  nameImg: nameImg,
-                  result: null
-                })
-                navigation.goBack();
-              
+          const publicUrl = await uploadImage(croppedPhoto);
+          const result = await readQrCodeFromUri(publicUrl);
+          try {
+            const result2 = await  QrCodeModule.scanQrFromUri(croppedPhoto)
+            console.log("result từ native module ",result2)
+          } catch (error: any) {
+            console.error('Lỗi khi quét QR:', error?.message || error);
+          }
+         
+          console.log(result);
+          if (mode == 'cleaning' && result) {
+            if (result == cleaningTaskLocation?.templateLocation.qrCodeIdentifier) {
+              alert(`chuẩn rồi `);
+              navigation.goBack();
             } else {
-              alert(`Bạn đã chụp ${result} nhưng yêu cầu phải chụp ${title},Vui lòng chụp lại! `);
+              alert(
+                `Thông tin không trùng khớp cho ${cleaningTaskLocation?.templateLocation.name},Vui lòng chụp lại! `
+              );
             }
           }
-          if (mode == 'roi' && result) {
-            console.log('result là ', result);
-            const textArray = result.texts.map((item: { text: any }) => item.text);
-            callback?.({photoUri: photo.uri,
-              nameImg: nameImg, result: textArray })
-            navigation.goBack();
-          }
-          if (mode == 'normal') {
+          if (mode == 'water-report-normal') {
             callback?.({
               photoUri: photo.uri,
-              nameImg: nameImg,
-              result: null
-            })
+            });
             navigation.goBack();
           }
         }
@@ -87,24 +85,72 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
     }
   };
   const captureIntruction =
-    mode === 'qr'
+    mode === 'cleaning'
       ? 'Đưa mã qr vào khung '
-      : mode === 'roi'
+      : mode === 'water-report-with-AI'
         ? 'Căn chỉnh màn hình máy đo vào khung'
         : null;
   return (
-    <View className="flex-1 bg-black ">
-      <SafeAreaView className="h-24"></SafeAreaView>
+    <View className="flex-1 bg-black">
+      <SafeAreaView className="h-24" />
+
       <CameraView
         ref={(ref) => (cameraRef.current = ref)}
         style={{ height: (width * 4) / 3 }}
-        className="relative flex w-full bg-slate-100"
+        className="relative w-full bg-slate-100"
         mute={true}
         ratio="4:3"
         onLayout={(event) => {
           const { width, height } = event.nativeEvent.layout;
           setCameraSize({ width, height });
         }}>
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: (cameraViewHeight - roiHeight) / 2,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          }}
+          className="flex flex-col items-center justify-center gap-10">
+          <Text className="text-black">{captureIntruction}</Text>
+          <AntDesign name="caretdown" size={24} color="black" />
+        </View>
+
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: (cameraViewHeight - roiHeight) / 2,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            top: (cameraViewHeight - roiHeight) / 2,
+            left: 0,
+            width: (cameraViewWidth - roiWidth) / 2,
+            height: roiHeight,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          }}
+        />
+
+        <View
+          style={{
+            position: 'absolute',
+            top: (cameraViewHeight - roiHeight) / 2,
+            right: 0,
+            width: (cameraViewWidth - roiWidth) / 2,
+            height: roiHeight,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          }}
+        />
+
+        {/* ROI khung quét */}
         <View
           style={{
             top: (cameraViewHeight - roiHeight) / 2,
@@ -115,22 +161,18 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
             borderWidth: 1,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: 'rgba(0,0,0,0.1)',
-            borderStyle: 'dashed',
             position: 'absolute',
-          }}>
-          <Text style={styles.qrText}>{captureIntruction}</Text>
-        </View>
+            borderStyle: 'dashed',
+          }}></View>
         {croppedPhotoUri && (
-          <Image src={croppedPhotoUri} className="fixed left-0 top-0 h-32 w-32" />
+          <Image src={croppedPhotoUri} className="absolute left-0 top-0 h-32 w-32" />
         )}
       </CameraView>
       <TouchableOpacity
         style={styles.captureButton}
         className="shadow-5xl border-4 border-gray-400"
-        onPress={takePhotoHandle}>
-        <Text className="text-5xl">📷</Text>
-      </TouchableOpacity>
+        onPress={takePhotoHandle}
+      />
     </View>
   );
 }

@@ -7,31 +7,40 @@ import { useAuthStore } from '../store/authStore';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '~/navigation/AppNavigator';
 import { useEffect } from 'react';
+import { useAppStore } from '~/store/useAppStore';
 
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
   const { login, isAuthenticated, user, firstLoginHandled, error,setFirstLoginHandled } = useAuthStore();
+  const {fetchInitialData} = useAppStore()
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   useEffect(() => {
-    console.log('isAuthenticated in useEffect:', isAuthenticated);
-    console.log('user in useEffect:', user);
-    console.log('firstLoginHandled in useEffect:', firstLoginHandled);
-    if (isAuthenticated && user) {
-      if (user.firstLogin && !firstLoginHandled) {
-        console.log('Navigating to ChangePassword (first login)');
-        navigation.replace('ChangePassword');
-        setFirstLoginHandled(true); // Cập nhật state trong store
+    const fetchData = async () => { // Tạo một hàm bất đồng bộ bên trong useEffect
+      if (isAuthenticated && user) {
+        try {
+          await fetchInitialData(); // Chờ cho fetchInitialData() hoàn thành
+          if (user.firstLogin && !firstLoginHandled) {
+            console.log('Navigating to ChangePassword (first login)');
+            navigation.replace('ChangePassword');
+            setFirstLoginHandled(true);
+          } else {
+            console.log('Navigating to Main (not first login)');
+            navigation.replace('Main');
+          }
+        } catch (error) {
+          // Xử lý lỗi nếu fetchInitialData() bị lỗi
+          console.error("Failed to fetch initial data:", error);
+          // Có thể hiển thị thông báo lỗi cho người dùng hoặc thực hiện các hành động phục hồi khác
+        }
       } else {
-        console.log('Navigating to Main (not first login)');
-        navigation.replace('Main');
+        console.log('isAuthenticated hoặc user là false trong useEffect');
       }
-    } else {
-      console.log('isAuthenticated hoặc user là false trong useEffect');
-    }
-  }, [isAuthenticated, user, firstLoginHandled, navigation, setFirstLoginHandled]); 
+    };
+    fetchData(); // Gọi hàm fetchData
+  }, [isAuthenticated, user, firstLoginHandled, navigation, setFirstLoginHandled, fetchInitialData]);
   const handleLogin = async () => {
     if (!identifier || !password) {
       useAuthStore.setState({ error: 'Vui lòng điền đầy đủ thông tin.' });

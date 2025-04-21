@@ -37,8 +37,11 @@ export const formatDateFromIsoToDDMMYY = (isoDateString?: string | null): string
 export const getTodayDateString = (): string => {
   const today = new Date();
   const year = today.getFullYear();
-  // getMonth() trả về từ 0-11 nên cần +1, padStart để đảm bảo 2 chữ số
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+export const formatYMDtoDMY = (YMDstring: string): string => {
+  const [year, month, day] = YMDstring.split('-');
+  return `${day}-${month}-${year}`;
 };

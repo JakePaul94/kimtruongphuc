@@ -22,6 +22,19 @@ export const loginApi = (
     loginTimestamp,
   });
 };
+export const autoLoginApi = (
+  refreshToken: string,
+  ipAddress: string,
+  userAgent: string,
+  loginTimestamp: Date
+) => {
+  return axiosNoAuth.post('/auth/autologin', {
+    refreshToken,
+    ipAddress,
+    userAgent,
+    loginTimestamp,
+  });
+};
 export const logoutApi = (refreshToken: string) =>
   axiosNoAuth.post('/auth/logout', { refreshToken });
 export const changePasswordApi = (oldPassword: string, newPassword: string) =>

@@ -1,7 +1,7 @@
 import * as ImageManipulator from 'expo-image-manipulator';
-import jsQR from 'jsqr';
 import * as FileSystem from 'expo-file-system';
-
+import { API_BASE_URL } from '~/config/apiConfig';
+import api from '~/apis/axiosInstance';
 type CropRegion = {
   x: number;
   y: number;
@@ -35,58 +35,16 @@ export const cropImageFromRoi = async (photoUri: string, cropRegion: CropRegion)
   }
 };
 
-export const getImageBase64 = async (imageUri: string): Promise<string | null> => {
+export const readQrCodeFromUri = async (imgUrl: string): Promise<string | null> => {
   try {
-    const base64 = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: FileSystem.EncodingType.Base64,
+
+    const response = await api.post(`${API_BASE_URL}/img-process/scan-qr`, {
+      imageUrl: imgUrl
     });
-    return base64;
+    return response.data;
   } catch (error) {
-    console.error('Lỗi khi đọc ảnh thành base64:', error);
+    console.error('Lỗi đọc QR code từ URI:', error);
     return null;
   }
 };
-export const sendImageToServer = async (imageUri: string, mode: string) => {
-  try {
-    const base64 = await getImageBase64(imageUri);
 
-    if (mode == "qr") {
-      const response = await fetch('http://192.168.1.3:5000/scan_qr', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image: base64 }),
-      });
-
-      const result = await response.json();
-      if (response.ok && result.qr_codes.length > 0) {
-        return result.qr_codes[0].data
-      } else {
-        alert('Không tìm thấy mã QR,Vui lòng chụp lại');
-      }
-    }
-    else if (mode == "roi") {
-      const response = await fetch('http://192.168.1.3:5000/ocr', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ image: base64 }),
-      });
-
-      const result = await response.json();
-      if (response.ok && result) {
-        return result
-      } else {
-        alert('Không nhận diện được số');
-      }
-    }
-    else{
-      return null
-    }
-  } catch (error) {
-    console.error('Lỗi khi gửi ảnh:', error);
-    alert('Lỗi kết nối đến server!');
-  }
-};

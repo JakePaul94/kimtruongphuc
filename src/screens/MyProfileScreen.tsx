@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity, ScrollView ,Image} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useAuthStore } from '~/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '~/navigation/AppNavigator';
 import { StackScreenProps } from '@react-navigation/stack';
+import AppHeader from '~/components/AppHeader';
 
 type MyProfileScreenProps = StackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -45,33 +46,33 @@ export default function MyProfileScreen({ navigation }: MyProfileScreenProps) {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-100 p-4">
-      <TouchableOpacity onPress={() => navigation.goBack()} className="mb-6">
-        <Ionicons name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
-      <View className="flex h-32 w-full flex-row justify-center">
-        <Image
-          src="https://photographer.vn/wp-content/uploads/2017/07/chup-anh-the-6.jpg"
-          className="h-24 w-24 rounded-full"
-        />
-      </View>
+    <View className="flex-1 bg-gray-100">
+      <AppHeader title="Thông tin cá nhân" onBackPress={navigation.goBack} />
+      <ScrollView className="flex-1 bg-gray-100 py-8  px-4">
+        <View className="flex h-32 w-full flex-row justify-center">
+          <Image
+            src={user?.profilePicture || require('../../assets/adaptive-icon.png')}
+            className="h-24 w-24 rounded-full"
+          />
+        </View>
 
-      <SectionTitle title="Thông tin cá nhân" />
-      <ProfileItem label="Họ và tên" value={user?.fullName} />
-      <ProfileItem label="Email" value={user?.email} />
-      <ProfileItem label="Số điện thoại" value={user?.phoneNumber} />
-      <ProfileItem label="Vai trò" value={user?.role} />
-      {/* Thêm các thông tin cá nhân khác mà bạn muốn hiển thị */}
+        <SectionTitle title="Thông tin cá nhân" />
+        <ProfileItem label="Họ và tên" value={user?.fullName} />
+        <ProfileItem label="Email" value={user?.email} />
+        <ProfileItem label="Số điện thoại" value={user?.phoneNumber?.trim()} />
+        <ProfileItem label="Vai trò" value={user?.role} />
+        {/* Thêm các thông tin cá nhân khác mà bạn muốn hiển thị */}
 
-      <SectionTitle title="Tài khoản" />
-      <ProfileItem label="Đổi mật khẩu" value={undefined} onPress={navigateToChangePassword} />
-      {/* Thêm các tùy chọn tài khoản khác nếu cần */}
+        <SectionTitle title="Tài khoản" />
+        <ProfileItem label="Đổi mật khẩu" value={undefined} onPress={navigateToChangePassword} />
+        {/* Thêm các tùy chọn tài khoản khác nếu cần */}
 
-      <TouchableOpacity
-        className="mt-8 items-center justify-center rounded-md bg-red-500 py-3"
-        onPress={handleLogout}>
-        <Text className="text-lg font-semibold text-white">Đăng xuất</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          className="mt-8 items-center justify-center rounded-md bg-red-500 py-3"
+          onPress={handleLogout}>
+          <Text className="text-lg font-semibold text-white">Đăng xuất</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }

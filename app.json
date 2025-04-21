@@ -2,7 +2,7 @@
   "expo": {
     "name": "kimtruongphuc",
     "slug": "kimtruongphuc",
-    "version": "1.0.0",
+    "version": "1.0.0","main": "index.js",
     "permissions": [
       "CAMERA",
       "RECORD_AUDIO"
@@ -19,7 +19,7 @@
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [

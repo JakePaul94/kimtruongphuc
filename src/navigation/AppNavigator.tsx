@@ -17,6 +17,26 @@ import MyProfileScreen from '~/screens/MyProfileScreen';
 import DeviceDetailScreen from '~/screens/devices/DeviceDetailScreen';
 import CreateIncidentReportScreen from '~/screens/incident/CreateIncidentReportScreen';
 import CleaningTaskExecutionScreen from '~/screens/roleBased/boilerWorker/CleaningTaskExecutionScreen';
+import SettingScreen from '~/screens/SettingScreen';
+import BoilerManagementScreen from '~/screens/boilers/BoilerManagementScreen';
+import BoilerDetailScreen from '~/screens/boilers/BoilerDetailScreen';
+import CreateBoilerScreen from '~/screens/boilers/CreateBoilerScreen';
+import DeviceManagementScreen from '~/screens/devices/DeviceManagementScreen';
+import UserManagementScreen from '~/screens/users/UserManagementScreen';
+import CreateDeviceScreen from '~/screens/devices/CreateDeviceScreen';
+import { useEffect } from 'react';
+import { useAppStore } from '~/store/useAppStore';
+import { UserAttributes } from '~/types/userType';
+import UserDetailScreen from '~/screens/users/UserDetailScreen';
+import CreateUserScreen from '~/screens/users/CreateUserScreen';
+import CleaningTaskTemplateScreen from '~/screens/tasks/cleaningTask/CleaningTemplateListScreen';
+import CreateCleaningTaskTemplateScreen from '~/screens/tasks/cleaningTask/CreateCleaningTemplateScreen';
+import EditCleaningTaskTemplateScreen from '~/screens/tasks/cleaningTask/EditCleaningTemplateScreen';
+import { CleaningTaskLocation, CleaningTemplate, WaterReportTemplate } from '~/types/tasksType';
+import WaterReportTemplateScreen from '~/screens/tasks/waterReport/WaterReportTemplateScreeen';
+import CreateWaterReportTemplateScreen from '~/screens/tasks/waterReport/CreateWaterReportTemplateScreen';
+import EditWaterReportTemplateScreen from '~/screens/tasks/waterReport/EditWaterReportTemplateScreen';
+import CleaningTaskScreen from '~/screens/roleBased/boilerWorker/CleaningTaskScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -24,17 +44,32 @@ export type RootStackParamList = {
   WaterQualityReport: undefined;
   CleaningCheck: undefined;
   PhotoCapture: {
-    mode: 'qr' | 'roi' | 'normal';
-    nameImg: string;
-    title: string;
-    callback?: (data: { photoUri: string | undefined; nameImg: string; result: any }) => void;
+    mode: 'cleaning' | 'water-report-with-AI' | 'water-report-normal';
+    cleaningTaskLocation?: CleaningTaskLocation;
+    callback?: (data: { photoUri: string }) => void;
   };
   ChangePassword: undefined;
+  UserManagement: undefined;
+  UserDetail: { user: UserAttributes };
+  CreateUser: undefined;
   Loading: undefined;
   Profile: undefined;
+  DeviceManagement: undefined;
   DeviceDetail: { deviceId: number };
+  CleaningTask: { cleaningTaskId: number };
   CreateIncidentReport: { deviceId: number };
   CleaningTaskExecution: { cleaningTaskId: number };
+  CleaningTaskTemplate: undefined;
+  CreateCleaningTaskTemplate: undefined;
+  EditCleaningTaskTemplate: { template: CleaningTemplate };
+  WaterReportTemplate: undefined;
+  CreateWaterReportTemplate: undefined;
+  EditWaterReportTemplate: { template: WaterReportTemplate };
+  Setting: undefined;
+  BoilerManagement: undefined;
+  BoilerDetail: { boilerId: number };
+  CreateBoiler: undefined;
+  CreateDevice: { parentId?: number | null | undefined };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,12 +84,24 @@ const LoadingScreen = () => (
 export default function AppNavigator() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
+  const { fetchInitialData, isDataFetched, fetchIniDataLoading, setDataFetched } = useAppStore(
+    (state) => state
+  );
   const role = user?.role;
   const authLoading = useAuthStore((state) => state.loading);
-
+  useEffect(() => {
+    const loadData = async () => {
+      if (!isDataFetched) {
+        await fetchInitialData();
+        setDataFetched(true);
+      }
+    };
+    loadData();
+  }, [isAuthenticated, role]);
+  const isLoading = authLoading || (isAuthenticated && role === 'admin' && !isDataFetched);
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {authLoading ? (
+      {isLoading ? (
         <Stack.Screen name="Loading" component={LoadingScreen} />
       ) : !isAuthenticated ? (
         <>
@@ -73,14 +120,43 @@ export default function AppNavigator() {
           {role === 'engineer' && <Stack.Screen name="Main" component={BottomTabEngineer} />}
           {role === 'hr' && <Stack.Screen name="Main" component={BottomTabHR} />}
           {role === 'office_staff' && <Stack.Screen name="Main" component={BottomTabOfficeStaff} />}
+
           <Stack.Screen name="Profile" component={MyProfileScreen} />
+          <Stack.Screen name="Setting" component={SettingScreen} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="UserManagement" component={UserManagementScreen} />
+          <Stack.Screen name="UserDetail" component={UserDetailScreen} />
+          <Stack.Screen name="CreateUser" component={CreateUserScreen} />
+          <Stack.Screen name="BoilerManagement" component={BoilerManagementScreen} />
+          <Stack.Screen name="BoilerDetail" component={BoilerDetailScreen} />
+          <Stack.Screen name="CreateBoiler" component={CreateBoilerScreen} />
+
           <Stack.Screen name="WaterQualityReport" component={WaterQualityReportScreen} />
+
+          <Stack.Screen name="CleaningTaskTemplate" component={CleaningTaskTemplateScreen} />
+          <Stack.Screen
+            name="CreateCleaningTaskTemplate"
+            component={CreateCleaningTaskTemplateScreen}
+          />
+          <Stack.Screen
+            name="EditCleaningTaskTemplate"
+            component={EditCleaningTaskTemplateScreen}
+          />
+          <Stack.Screen name="CleaningTask" component={CleaningTaskScreen} />
           <Stack.Screen name="CleaningCheck" component={CleaningCheckScreen} />
+          <Stack.Screen name="CleaningTaskExecution" component={CleaningTaskExecutionScreen} />
+
+          <Stack.Screen name="WaterReportTemplate" component={WaterReportTemplateScreen} />
+          <Stack.Screen
+            name="CreateWaterReportTemplate"
+            component={CreateWaterReportTemplateScreen}
+          />
+          <Stack.Screen name="EditWaterReportTemplate" component={EditWaterReportTemplateScreen} />
           <Stack.Screen name="PhotoCapture" component={PhotoCaptureScreen} />
           <Stack.Screen name="DeviceDetail" component={DeviceDetailScreen} />
+          <Stack.Screen name="DeviceManagement" component={DeviceManagementScreen} />
+          <Stack.Screen name="CreateDevice" component={CreateDeviceScreen} />
           <Stack.Screen name="CreateIncidentReport" component={CreateIncidentReportScreen} />
-          <Stack.Screen name="CleaningTaskExecution" component={CleaningTaskExecutionScreen} />
         </>
       )}
     </Stack.Navigator>

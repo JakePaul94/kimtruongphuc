@@ -18,7 +18,6 @@ export default function TodoListScreen({ navigation }: Props) {
     <View className="flex-1 items-center w-screen relative justify-start bg-white">
       <Navbar
         onNotificationPress={() => alert('Thông báo')}
-        onMenuPress={() => alert('Mở menu')}
       />
       <ScrollView className="w-full flex-1 bg-gray-100 p-4">
         <View className="mb-4 rounded-lg bg-white p-4 shadow-lg">

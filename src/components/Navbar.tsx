@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Platform,StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '~/store/authStore';
 import Menu from './Menu'; // Import component Menu
+
 
 type NavbarProps = {
   onNotificationPress?: () => void;
@@ -12,7 +13,7 @@ type NavbarProps = {
 export default function Navbar({ onNotificationPress }: NavbarProps) {
   const user = useAuthStore((state) => state.user);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
   const handleMenuPress = () => {
     setIsMenuVisible(true);
   };
@@ -22,15 +23,16 @@ export default function Navbar({ onNotificationPress }: NavbarProps) {
   };
 
   return (
-    <View className="fixed top-0 h-24 w-full flex-col items-center justify-start bg-transparent border-b border-gray-200 shadow-sm z-10">
+    <View  className="fixed top-0 h-24 w-full flex-col items-center justify-start bg-transparent border-b border-gray-200 shadow-sm z-10">
+      
       <LinearGradient
-        colors={['#ffffff', '#f3f3fc']}
+        colors={['#ffffff', '#ffffff']}
         className="h-24 w-full flex-row items-center justify-between px-4"
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}>
         <View className="flex-row items-center gap-4">
           <Image
-            src="https://photographer.vn/wp-content/uploads/2017/07/chup-anh-the-6.jpg"
+            src={user?.profilePicture || require('../../assets/adaptive-icon.png')}
             className="h-8 w-8 rounded-full"
           />
           <Text className="text-lg font-bold text-black">{user?.fullName}</Text>
