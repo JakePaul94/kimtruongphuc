@@ -1,0 +1,1 @@
+{"version":3,"file":"ExpoQRUriScannerModule.web.d.ts","sourceRoot":"","sources":["../src/ExpoQRUriScannerModule.web.ts"],"names":[],"mappings":"AAAA,OAAO,EAAqB,YAAY,EAAE,MAAM,MAAM,CAAC;AAEvD,OAAO,EAAE,4BAA4B,EAAE,MAAM,0BAA0B,CAAC;AAExE,cAAM,sBAAuB,SAAQ,YAAY,CAAC,4BAA4B,CAAC;IAC7E,EAAE,SAAW;IACP,aAAa,CAAC,KAAK,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC;IAGjD,KAAK;CAGN;;AAED,wBAAyD"}
