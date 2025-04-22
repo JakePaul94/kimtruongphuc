@@ -27,13 +27,15 @@
   "author": "Trinhdc <trinhbk501@gmail.com> (https://github.com/JakePaul94)",
   "license": "MIT",
   "homepage": "https://github.com/JakePaul94/expo-qr-uri-scanner#readme",
-  "dependencies": {},
+  "dependencies": {
+    "expo-modules-core": "^2.2.3"
+  },
   "devDependencies": {
     "@types/react": "~18.3.12",
-    "expo-module-scripts": "^4.0.4",
     "expo": "~52.0.0",
+    "expo-module-scripts": "^4.0.4",
     "react": "18.3.1",
-  "react-dom": "18.3.1",
+    "react-dom": "18.3.1",
     "react-native": "0.76.0"
   },
   "peerDependencies": {

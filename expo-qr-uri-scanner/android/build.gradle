@@ -3,6 +3,9 @@ apply plugin: 'com.android.library'
 group = 'expo.modules.qruriscanner'
 version = '0.1.0'
 
+ext {
+  kotlinVersion = rootProject.ext.has("kotlinVersion") ? rootProject.ext.get("kotlinVersion") : "1.8.10"
+}
 def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
 apply from: expoModulesCorePlugin
 applyKotlinExpoModulesCorePlugin()
