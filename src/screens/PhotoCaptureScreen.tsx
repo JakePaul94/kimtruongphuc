@@ -9,6 +9,7 @@ import  QrCodeModule   from '~/native-modules/QRCodeReader';
 import { cropImageFromRoi, readQrCodeFromUri } from '~/utils/ImageProccessing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { uploadImage } from '~/apis/uploadApi';
+import {  ExpoQRUriScanner } from 'expo-qr-uri-scanner';
 type Props = NativeStackScreenProps<RootStackParamList, 'PhotoCapture'>;
 const { width, height } = Dimensions.get('window');
 
@@ -57,7 +58,7 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
           const publicUrl = await uploadImage(croppedPhoto);
           const result = await readQrCodeFromUri(publicUrl);
           try {
-            const result2 = await  QrCodeModule.scanQrFromUri(croppedPhoto)
+            const result2 = await  ExpoQRUriScanner.scanFromUri(croppedPhoto)
             console.log("result từ native module ",result2)
           } catch (error: any) {
             console.error('Lỗi khi quét QR:', error?.message || error);

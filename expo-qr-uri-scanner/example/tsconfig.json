@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "expo-qr-uri-scanner": ["../src/index"],
+      "expo-qr-uri-scanner/*": ["../src/*"]
+    }
+  }
+}

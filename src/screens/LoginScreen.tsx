@@ -18,10 +18,12 @@ export default function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   useEffect(() => {
-    const fetchData = async () => { // Tạo một hàm bất đồng bộ bên trong useEffect
+    const fetchData = async () => {
       if (isAuthenticated && user) {
+        console.log("login thành công");
         try {
-          await fetchInitialData(); // Chờ cho fetchInitialData() hoàn thành
+          await fetchInitialData(); // Đợi cho fetchInitialData hoàn thành
+
           if (user.firstLogin && !firstLoginHandled) {
             console.log('Navigating to ChangePassword (first login)');
             navigation.replace('ChangePassword');
@@ -31,14 +33,14 @@ export default function LoginScreen({ navigation }: Props) {
             navigation.replace('Main');
           }
         } catch (error) {
-          // Xử lý lỗi nếu fetchInitialData() bị lỗi
           console.error("Failed to fetch initial data:", error);
-          // Có thể hiển thị thông báo lỗi cho người dùng hoặc thực hiện các hành động phục hồi khác
+          // Xử lý lỗi
         }
       } else {
         console.log('isAuthenticated hoặc user là false trong useEffect');
       }
     };
+
     fetchData(); // Gọi hàm fetchData
   }, [isAuthenticated, user, firstLoginHandled, navigation, setFirstLoginHandled, fetchInitialData]);
   const handleLogin = async () => {

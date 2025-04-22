@@ -1,0 +1,10 @@
+{
+  "name": "expo-qr-uri-scanner",
+  "platforms": ["android", "ios"],
+  "android": {
+    "modules": ["expo.modules.qruriscanner.ExpoQRUriScannerModule"]
+  },
+  "ios": {
+    "modules": ["ExpoQRUriScannerModule"]
+  }
+}
