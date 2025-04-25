@@ -151,7 +151,7 @@ export default function CreateDeviceScreen() {
   const navigation = useNavigation<NavigationType>();
   const route = useRoute<CreateDeviceRouteProp>();
   const { parentId } = route.params;
-  const {boilers,boilerDevices} = useAppStore();
+  const { boilers, boilerDevices } = useAppStore();
   const [selectedBoilerId, setSelectedBoilerId] = useState<string>('');
   // State cho form data, khởi tạo giá trị mặc định
   const [formData, setFormData] = useState<Partial<DeviceAttributes>>({
@@ -223,7 +223,16 @@ export default function CreateDeviceScreen() {
       return;
     }
     // Thêm các validation khác nếu cần
-
+    if (formData.maintenanceCycle) {
+      const match = formData.maintenanceCycle.match(/^(\d+)\s*tháng$/i);
+      if (!match) {
+        Alert.alert(
+          'Định dạng không hợp lệ',
+          'Vui lòng nhập Chu kỳ bảo trì theo định dạng "x tháng" (ví dụ: 3 tháng).'
+        );
+        return;
+      }
+    }
     setSaving(true);
     try {
       // 1. Upload ảnh (nếu có)
@@ -269,14 +278,14 @@ export default function CreateDeviceScreen() {
 
       if (parentId) {
         // Tìm boilerId của thiết bị cha
-        const boilerParent = boilerDevices.find(a => a.deviceId === parentId);
+        const boilerParent = boilerDevices.find((a) => a.deviceId === parentId);
         const boilerParentId = boilerParent?.boilerId;
-        
+
         if (boilerParentId) {
           // Nếu thiết bị cha đã thuộc về một lò hơi
           if (selectedBoilerId && parseInt(selectedBoilerId) !== boilerParentId) {
             Alert.alert(
-              'Thông báo', 
+              'Thông báo',
               'Thiết bị con phải thuộc cùng lò hơi với thiết bị cha. Hệ thống sẽ tự động gán lò hơi theo thiết bị cha.'
             );
           }
@@ -289,8 +298,8 @@ export default function CreateDeviceScreen() {
         // Không có parentId và người dùng chọn lò hơi
         finalBoilerId = parseInt(selectedBoilerId);
       }
-      if(finalBoilerId){
-        assignDeviceToBoiler(newDevice.id,finalBoilerId)
+      if (finalBoilerId) {
+        assignDeviceToBoiler(newDevice.id, finalBoilerId);
       }
       Alert.alert('Thành công', 'Tạo thiết bị mới thành công!');
       // Điều hướng đến màn hình chi tiết của thiết bị vừa tạo hoặc quay lại danh sách
@@ -477,7 +486,7 @@ export default function CreateDeviceScreen() {
           label="Chu kỳ bảo trì"
           value={formData.maintenanceCycle}
           onChangeText={(text) => handleInputChange('maintenanceCycle', text)}
-          placeholder="Ví dụ: 3 tháng, 6 tháng, 1 năm..."
+          placeholder="Ví dụ: 3 tháng, 6 tháng .."
         />
         <FormInput
           label="Tình trạng kiểm định"

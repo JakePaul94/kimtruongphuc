@@ -27,3 +27,18 @@ export function isTokenExpired(token: string): boolean {
     return true;
   }
 }
+export function getRoleString(role:string):string{
+  switch (role) {
+    case 'admin':
+        return 'Admin';
+    case 'boiler_worker':
+        return 'Công nhân lò hơi';
+    case 'boiler_manager':
+        return 'Quản lý';
+    case 'hr':
+        return 'Phòng nhân sự';
+    default:
+        return role;
+}
+  return ""
+}

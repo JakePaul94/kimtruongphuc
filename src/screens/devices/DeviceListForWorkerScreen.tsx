@@ -11,10 +11,11 @@ import Navbar from '~/components/Navbar';
 import { DeviceAttributes } from '~/types/deviceType';
 import { useAppStore } from '~/store/useAppStore';
 import { useAuthStore } from '~/store/authStore';
+import AppHeader from '~/components/AppHeader';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-export default function DeviceScreen() {
+export default function DeviceListForWorkerScreen() {
   const [allDevices, setAllDevices] = useState<DeviceAttributes[]>([]);
   const [selectedDeviceType, setSelectedDeviceType] = useState<'all' | 'main' | 'component'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'nearMaintenance' | 'nearInspection'>('all');
@@ -121,7 +122,7 @@ export default function DeviceScreen() {
 
   return (
     <View className="flex-1 bg-gray-100">
-      <Navbar />
+      <AppHeader title='Danh sách thiết bị' onBackPress={()=>{navigation.goBack()}}/>
       <View className="flex flex-row h-16 justify-between bg-white p-2 shadow-md">
         <View className="w-1/2 h-12 border-r border-green-200 bg-white px-3 pt-2">
           <View className="justify-center">
@@ -152,7 +153,7 @@ export default function DeviceScreen() {
         </View>
       </View>
 
-      <Text className="p-6 text-center text-xl font-bold">
+      <Text className="p-2 text-center text-xl font-semibold">
         Danh sách thiết bị ({filteredDevices.length})
       </Text>
 

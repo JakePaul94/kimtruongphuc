@@ -3,10 +3,11 @@ import { MaterialIcons, AntDesign, Ionicons, MaterialCommunityIcons } from '@exp
 
 import DashBoardScreen from '~/screens/DashBoardScreen';
 import SettingScreen from '~/screens/SettingScreen';
-import CreateTaskScreen from '~/screens/CreateTaskScreen';
+
 import TrackingScreen from '~/screens/TrackingScreen';
 import DeviceManagementScreen from '~/screens/devices/DeviceManagementScreen';
 import AIScreen from '~/screens/AIScreen';
+import TaskManagementScreen from '~/screens/tasks/TasksManagementScreen';
 
 
 export type AdminTabParamList = {
@@ -51,7 +52,7 @@ export default function BottomTabAdmin() {
     >
       <Tab.Screen name="DashBoard" component={DashBoardScreen} options={{ title: 'Trang chính' }} />
       <Tab.Screen name="Devices" component={DeviceManagementScreen} options={{ title: 'Thiết bị' }} />
-      <Tab.Screen name="CreateTask" component={CreateTaskScreen} options={{ title: 'Tạo Task' }} />
+      <Tab.Screen name="CreateTask" component={TaskManagementScreen} options={{ title: 'QL công việc' }} />
       <Tab.Screen name="Tracking" component={TrackingScreen} options={{ title: 'Theo dõi' }} />
       <Tab.Screen name="AI" component={AIScreen} options={{ title: 'AI' }} />
     </Tab.Navigator>

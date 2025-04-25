@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,20 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Thêm icon
-import { formatDateDDMMYY, formatYMDtoDMY, getTodayDateString } from '../../../utils/timeHelper'; // Điều chỉnh đường dẫn này cho đúng
+import { Ionicons } from '@expo/vector-icons';
+import { formatDateDDMMYYYY, formatYMDtoDMY, getTodayDateString } from '../../../utils/timeHelper';
 import { getAllTasksForMeAPI } from '~/apis/workerAPI';
 import Navbar from '~/components/Navbar';
 import { useAppStore } from '~/store/useAppStore';
-import { getDevicesDueSoon } from '../../../utils/deviceHelpers';
+import { getBoilerNameFromDevice, getDevicesDueSoon } from '../../../utils/deviceHelpers';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '~/navigation/AppNavigator';
-import { useNavigation } from '@react-navigation/native';
-// --- Interface TaskItem giữ nguyên ---
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useAuthStore } from '~/store/authStore';
+import { acceptCleaningTask, acceptWaterReportTask } from '~/apis/tasksApi';
+import { getStatusBgClass, getStatusText } from '~/utils/tasksHelper';
+import { DeviceAttributes } from '~/types/deviceType';
+
 interface TaskItem {
   id: number;
   type: string;
@@ -36,92 +40,143 @@ interface TaskItem {
   deviceId: number | null;
   deviceName?: string | null;
 }
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-// --- Component ---
+
 export default function MyTasksScreen() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(getTodayDateString());
+  const [activeTab, setActiveTab] = useState<'available' | 'in_progress'>('available');
+
   const { devices, boilers, users, boilerDevices } = useAppStore();
   const maintenanceDevices = getDevicesDueSoon(devices, 'nextMaintenanceDate');
   const inspectionDevices = getDevicesDueSoon(devices, 'nextInspectionDate');
   const navigation = useNavigation<NavigationProp>();
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
-      try {
-        const data = await getAllTasksForMeAPI(selectedDate);
-        setTasks(data);
-      } catch (error: any) {
-        console.error('Lỗi khi tải công việc:', error);
-        setErrorMessage(
-          error.response?.data?.message || error.message || 'Không thể tải danh sách công việc.'
-        );
-        setTasks([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchTasks();
-  }, [selectedDate]);
+  const user = useAuthStore((state) => state.user);
+
+  const fetchTasks = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await getAllTasksForMeAPI(selectedDate);
+
+      // Lọc tasks theo tab hiện tại
+      const filteredTasks = data.filter((task) => {
+        if (activeTab === 'available') {
+          return task.status === 'pending';
+        } else {
+          return task.status === 'in_process';
+        }
+      });
+
+      setTasks(filteredTasks);
+    } catch (error: any) {
+      console.error('Lỗi khi tải công việc:', error);
+      setErrorMessage(
+        error.response?.data?.message || error.message || 'Không thể tải danh sách công việc.'
+      );
+      setTasks([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks();
+    }, [activeTab, selectedDate])
+  );
+
   const handlePressDevice = (id: number) => {
     navigation.navigate('DeviceDetail', { deviceId: id });
   };
-  const handleItemPress = (typeTask: string, id: number) => {
-    if (typeTask === 'cleaning') {
-      navigation.navigate('CleaningTask', { cleaningTaskId: id });
+
+  const handleItemPress = (typeTask: string, id: number, status: string) => {
+    if (activeTab === 'available') {
+      Alert.alert(
+        'Xác nhận',
+        `Bạn có chắc chắn muốn thực hiện công việc này?`,
+        [
+          { text: 'Hủy', style: 'cancel' },
+          {
+            text: 'Đồng ý',
+            onPress: async () => {
+              if (typeTask === 'cleaning') {
+                await acceptCleaningTask(id);
+                navigation.navigate('CleaningTask', { cleaningTaskId: id });
+              } else if (typeTask === 'water-report') {
+                await acceptWaterReportTask(id);
+                navigation.navigate('WaterReport', { waterReportId: id });
+              }
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    } else {
+      if (typeTask === 'cleaning') {
+        navigation.navigate('CleaningTask', { cleaningTaskId: id });
+      } else if (typeTask === 'water-report') {
+        navigation.navigate('WaterReport', { waterReportId: id });
+      }
     }
   };
-  const getStatusBgClass = (status: string): string => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-400';
-      case 'in_process':
-        return 'bg-blue-500';
-      case 'completed':
-        return 'bg-green-500';
-      case 'canceled':
-        return 'bg-gray-500';
-      case 'failed':
-        return 'bg-red-500';
-      case 'skipped':
-        return 'bg-gray-400';
-      default:
-        return 'bg-gray-300';
+
+  const getTypeString = (str: string) => {
+    if (str === 'cleaning') {
+      return 'Vệ sinh';
     }
+    if (str === 'water-report') {
+      return 'Báo cáo nước';
+    }
+    return 'Chưa phân loại';
   };
 
   const renderTaskItem = ({ item }: { item: TaskItem }) => {
-    // Convert scheduledDate and completedAt to Date objects
     const scheduledDateAsDate = new Date(item.scheduledDate);
     const completedAtAsDate = item.completedAt ? new Date(item.completedAt) : null;
-
+    console.log(item.type);
     return (
       <TouchableOpacity
-        className="mb-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm active:bg-gray-100"
-        onPress={() => handleItemPress(item.type, item.id)}>
-        <View className="mb-2 flex-row items-center justify-between">
-          <Text className="mr-2 flex-1 text-base font-semibold text-gray-800">{item.title}</Text>
+        className="mb-3 rounded-lg border border-gray-200 bg-white  shadow-sm active:bg-gray-100"
+        onPress={() => handleItemPress(item.type, item.id, item.status)}>
+        <View
+          style={{
+            borderBottomWidth: 0.3,
+            borderColor: 'rgba(255,0,0,0.3)',
+            backgroundColor: 'rgba(222,0,0,0.02)',
+          }}
+          className=" flex-row  items-center justify-between p-3">
+          <Text className="mr-2 flex-1  text-base font-semibold text-gray-800">{item.title}</Text>
           <View
             className={`min-w-[85px] items-center rounded-full px-3 py-1 ${getStatusBgClass(item.status)}`}>
             <Text className="text-[11px] font-bold uppercase text-white">
-              {item.status.replace('_', ' ')}
+              {getStatusText(item.status)}
             </Text>
           </View>
         </View>
 
-        <Text className="mb-1 text-sm text-gray-600">
-          Loại: <Text className="font-medium capitalize">{item.type}</Text> (
-          {item.assignmentType === 'assigned' ? 'Được giao' : 'Có sẵn'} )
-        </Text>
-        <Text className="mb-1 text-sm text-gray-600">
-          Ngày: {formatDateDDMMYY(scheduledDateAsDate)}
-        </Text>
+        <View
+          style={{ borderBottomWidth: 0.3, borderColor: 'rgba(255,0,0,0.13)' }}
+          className="m-0 flex h-12 flex-row content-center  items-center justify-start px-4">
+          <Text className=" text-center text-sm text-gray-600">
+            Loại: <Text className="font-medium capitalize">{getTypeString(item.type)}</Text> (
+            {item.assignmentType === 'assigned' ? 'Đã nhận' : 'Có sẵn'})
+          </Text>
+        </View>
+        <View
+          style={{ borderBottomWidth: 0.3, borderColor: 'rgba(255,0,0,0.13)' }}
+          className="m-0 flex h-12 flex-row content-center items-center justify-start px-4">
+          <Text className=" text-center text-sm text-gray-600">
+            Ngày: {formatDateDDMMYYYY(scheduledDateAsDate)}
+          </Text>
+        </View>
+
         {completedAtAsDate && (
           <Text className="mb-1 text-sm text-gray-600">
-            Hoàn thành: {formatDateDDMMYY(completedAtAsDate)}
+            Hoàn thành: {formatDateDDMMYYYY(completedAtAsDate)}
           </Text>
         )}
         {item.boilerName && (
@@ -136,32 +191,52 @@ export default function MyTasksScreen() {
       </TouchableOpacity>
     );
   };
+
   const renderDeviceList = (
     title: string,
     data: any[],
     dateKey: 'nextMaintenanceDate' | 'nextInspectionDate'
   ) => {
     if (data.length === 0) return null;
-
+    const type = dateKey === 'nextMaintenanceDate'? "bảo trì":"kiểm định"
     return (
       <View className="mb-5">
-        <Text className="mb-2 text-base font-semibold text-gray-700">{title}</Text>
+        <Text className="mb-4 text-base font-semibold text-gray-700">{title}</Text>
         {data.map((device) => (
-          <TouchableOpacity onPress={() => handlePressDevice(device.id)}>
-            <View
-              key={device.id}
-              className="mb-2 rounded-md border border-gray-200 bg-white px-4 py-3 shadow-sm">
-              <Text className="text-sm font-medium text-gray-800">{device.deviceName}</Text>
-              <Text className="text-sm text-gray-600">Model: {device.model}</Text>
-              <Text className="text-sm text-gray-600">
-                Ngày đến hạn: {formatDateDDMMYY(new Date(device[dateKey]))}
-              </Text>
+          <TouchableOpacity key={device.id} onPress={() => handlePressDevice(device.id)}>
+            <View className="mb-2 rounded-md border border-gray-200 bg-white  shadow-sm">
+              <View
+                style={{
+                  borderBottomWidth: 0.3,
+                  borderColor: 'rgba(1,244,0,0.3)',
+                  backgroundColor: 'rgba(222,0,0,0.02)',
+                }}
+                className="flex items-center justify-center p-2 text-center">
+                <Text className="text-lg font-bold text-green-800">{device.deviceName}</Text>
+              </View>
+              {getBoilerNameFromDevice(device.id, boilerDevices, boilers) && (
+                <View className="flex flex-row justify-between py-2 px-4">
+                  <Text className="text-sm text-gray-600">Vị trí :</Text>
+                  <Text className="text-sm font-semibold text-gray-600">{getBoilerNameFromDevice(device.id, boilerDevices, boilers)}</Text>
+                </View>
+              )}
+              <View className="flex flex-row justify-between py-2 px-4">
+                <Text className="text-sm text-gray-600">Model :</Text>
+                <Text className="text-sm font-semibold text-gray-600">{device.model}</Text>
+              </View>
+              <View className="flex flex-row justify-between py-2 px-4">
+                <Text className="text-sm text-gray-600">Ngày đến hạn {type} :</Text>
+                <Text className="text-sm font-semibold text-red-600">
+                  {formatDateDDMMYYYY(new Date(device[dateKey]))}
+                </Text>
+              </View>
             </View>
           </TouchableOpacity>
         ))}
       </View>
     );
   };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -176,10 +251,7 @@ export default function MyTasksScreen() {
       return (
         <View className="flex-1 items-center justify-center px-5">
           <Text className="text-center text-base text-red-600">{errorMessage}</Text>
-          <TouchableOpacity
-            className="mt-4 rounded bg-blue-500 px-4 py-2"
-            onPress={() => fetchTasks()} // Gọi lại hàm fetchTasks
-          >
+          <TouchableOpacity className="mt-4 rounded bg-blue-500 px-4 py-2" onPress={fetchTasks}>
             <Text className="font-semibold text-white">Thử lại</Text>
           </TouchableOpacity>
         </View>
@@ -190,7 +262,10 @@ export default function MyTasksScreen() {
       return (
         <View className="flex-1 items-center justify-center">
           <Text className="text-gray-500">
-            Không có công việc nào cho ngày {formatYMDtoDMY(selectedDate)}.
+            {activeTab === 'available'
+              ? 'Không có công việc nào có thể nhận'
+              : 'Không có công việc nào đang làm'}{' '}
+            ngày {formatYMDtoDMY(selectedDate)}
           </Text>
         </View>
       );
@@ -198,76 +273,75 @@ export default function MyTasksScreen() {
 
     return (
       <View className="space-y-3">
-        {tasks.map((item) => (
-          <View key={`${item.type}-${item.id}`}>{renderTaskItem({ item })}</View>
+        {tasks.map((item, index) => (
+          <View key={index}>{renderTaskItem({ item })}</View>
         ))}
       </View>
     );
   };
 
-  const fetchTasks = async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    try {
-      const data = await getAllTasksForMeAPI(selectedDate);
-      setTasks(data);
-    } catch (error: any) {
-      console.error('Lỗi khi tải công việc:', error);
-      setErrorMessage(
-        error.response?.data?.message || error.message || 'Không thể tải danh sách công việc.'
-      );
-      setTasks([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const confirmAction = () => {
-    Alert.alert(
-      'Xác nhận',
-      'Bạn có chắc chắn muốn thực hiện hành động này?',
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { text: 'Đồng ý', onPress: () => console.log('Hành động đã được xác nhận') },
-      ],
-      { cancelable: true }
+  const renderHeaderTabs = () => {
+    return (
+      <View className="h-12  w-full flex-row bg-white">
+        <TouchableOpacity className="h-full w-1/2" onPress={() => setActiveTab('available')}>
+          <View
+            className={`flex-1 items-center justify-start  ${
+              activeTab === 'available' ? 'border-b  border-green-500' : ''
+            }`}>
+            <Text
+              className={`text-center text-lg font-semibold ${
+                activeTab === 'available' ? 'text-green-600' : 'text-gray-500'
+              }`}>
+              Có thể nhận
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity className="h-full w-1/2" onPress={() => setActiveTab('in_progress')}>
+          <View
+            className={`flex-1 items-center justify-start  ${
+              activeTab === 'in_progress' ? 'border-b  border-green-500' : ''
+            }`}>
+            <Text
+              className={`text-center text-lg font-semibold ${
+                activeTab === 'in_progress' ? 'text-green-600' : 'text-gray-500'
+              }`}>
+              Đang Làm
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
   return (
     <View className="flex-1 bg-gray-50">
       <Navbar />
-      <View className="h-12 w-full flex-row bg-white">
-        <TouchableOpacity className="h-full w-1/2  ">
-          <View className="flex-1 items-center  justify-center border-r border-red-100">
-            <Text className="text-center font-semibold text-gray-800">Có thể nhận</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity className="h-full w-1/2">
-          <View className="flex-1 items-center justify-center">
-            <Text className="text-center font-bold text-gray-800">Đang Làm</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      {renderHeaderTabs()}
 
-      <ScrollView className="flex-1 px-4 py-3" showsVerticalScrollIndicator={false}>
-        <Text className="mb-4 text-center text-lg font-semibold text-gray-800">
-          Công việc ngày {formatYMDtoDMY(selectedDate)}
+      <ScrollView className="flex-1  py-4" showsVerticalScrollIndicator={false}>
+        <Text style={{backgroundColor:"rgba(101, 113, 219, 0.01) ",borderBottomWidth:0.3,borderTopWidth:0.3,borderColor:"rgba(0,222,0,0.3)"}} className="py-4 text-center text-lg font-semibold text-gray-800">
+          {activeTab === 'available' ? 'Công việc có thể nhận' : 'Công việc đang làm'} ngày{' '}
+          {formatYMDtoDMY(selectedDate)}
         </Text>
 
-        <View className="mb-6">{renderContent()}</View>
-
-        {renderDeviceList(
-          '🔧 Thiết bị cần bảo trì trong 15 ngày tới',
-          maintenanceDevices,
-          'nextMaintenanceDate'
-        )}
-
-        {renderDeviceList(
-          '🧪 Thiết bị cần kiểm định trong 15 ngày tới',
-          inspectionDevices,
-          'nextInspectionDate'
-        )}
+        <View className='p-4'>
+          <View className="mb-6">{renderContent()}</View>
+          {/* Chỉ hiển thị thiết bị ở tab "Có thể nhận" */}
+          {activeTab === 'available' && (
+            <>
+              {renderDeviceList(
+                '🔧 Thiết bị cần bảo trì trong 15 ngày tới',
+                maintenanceDevices,
+                'nextMaintenanceDate'
+              )}
+              {renderDeviceList(
+                '🧪 Thiết bị cần kiểm định trong 15 ngày tới',
+                inspectionDevices,
+                'nextInspectionDate'
+              )}
+            </>
+          )}
+        </View>
       </ScrollView>
     </View>
   );

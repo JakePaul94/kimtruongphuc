@@ -8,10 +8,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { CleaningTask } from '~/types/tasksType';
-import { getCleaningTaskById } from '~/apis/tasksApi';
+import { useCallback, useEffect, useState } from 'react';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { CleaningTask, CleaningTaskLocation } from '~/types/tasksType';
+import { compeleteTaskLocation, getCleaningTaskById } from '~/apis/tasksApi';
 import { RootStackParamList } from '~/navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AppHeader from '~/components/AppHeader';
@@ -27,21 +27,22 @@ export default function CleaningTaskScreen() {
   const [task, setTask] = useState<CleaningTask | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        const data = await getCleaningTaskById(cleaningTaskId);
-        setTask(data);
-      } catch (error) {
-        console.error('Lỗi khi lấy công việc:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTask = async () => {
+        try {
+          const data = await getCleaningTaskById(cleaningTaskId);
+          setTask(data);
+        } catch (error) {
+          console.error('Lỗi khi lấy công việc:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchTask();
-  }, [cleaningTaskId]);
-
+      fetchTask();
+    }, [cleaningTaskId]) // Chỉ gọi lại nếu `cleaningTaskId` thay đổi
+  );
   const handleNoteChange = (locationId: number, note: string) => {
     if (!task) return;
     const updatedLocations = task.locations.map((loc) =>
@@ -49,9 +50,15 @@ export default function CleaningTaskScreen() {
     );
     setTask({ ...task, locations: updatedLocations });
   };
-
-  const handleCapturePhoto = (locationId: number) => {
-    navigation.navigate("PhotoCapture",{mode:'cleaning'})
+  const compelteLocationCallback = async (locationId: number, photoUrl: string) => {
+    await compeleteTaskLocation(locationId, ' Hoàn thành lúc null ', photoUrl);
+  };
+  const handleCapturePhoto = (locationId: number, location: CleaningTaskLocation) => {
+    navigation.navigate('PhotoCapture', {
+      mode: 'cleaning',
+      cleaningTaskLocation: location,
+      cleaningCallback: compelteLocationCallback,
+    });
   };
 
   const handleSubmit = async () => {
@@ -72,7 +79,7 @@ export default function CleaningTaskScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <AppHeader title="Tiến hành" />
+      <AppHeader title="Tiến hành" onBackPress={()=>{navigation.goBack()}} />
       <ScrollView className="px-4 py-6">
         <Text className="mb-2 text-xl font-semibold text-gray-800">{task.template.name}</Text>
         <Text className="mb-4 text-gray-500">Lò hơi: {task.boiler.name}</Text>
@@ -108,7 +115,7 @@ export default function CleaningTaskScreen() {
                 )}
 
                 <TouchableOpacity
-                  onPress={() => handleCapturePhoto(loc.id)}
+                  onPress={() => handleCapturePhoto(loc.id, loc)}
                   className="rounded-full bg-blue-500 p-3 shadow-md">
                   <Feather name="camera" size={20} color="white" />
                 </TouchableOpacity>

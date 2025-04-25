@@ -1,77 +1,121 @@
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StackScreenProps } from '@react-navigation/stack';
-import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
-
+import { View, Text, TextInput, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '../store/authStore';
+import { useAppStore } from '~/store/useAppStore';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '~/navigation/AppNavigator';
-import { useEffect } from 'react';
-import { useAppStore } from '~/store/useAppStore';
 
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const { login, isAuthenticated, user, firstLoginHandled, error,setFirstLoginHandled } = useAuthStore();
-  const {fetchInitialData} = useAppStore()
+  const login = useAuthStore(state => state.login);
+  const loading = useAuthStore(state => state.loading);
+  const error = useAuthStore(state => state.error);
+  const setFirstLoginHandled = useAuthStore(state => state.setFirstLoginHandled);
+  const fetchInitialData = useAppStore((state) => state.fetchInitialData);
+  const fetchIniDataLoading = useAppStore((state) => state.fetchIniDataLoading);
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  useEffect(() => {
-    const fetchData = async () => {
-      if (isAuthenticated && user) {
-        console.log("login thành công");
-        try {
-          await fetchInitialData(); // Đợi cho fetchInitialData hoàn thành
+  const [localError, setLocalError] = useState<string | null>(null);
 
-          if (user.firstLogin && !firstLoginHandled) {
-            console.log('Navigating to ChangePassword (first login)');
-            navigation.replace('ChangePassword');
-            setFirstLoginHandled(true);
-          } else {
-            console.log('Navigating to Main (not first login)');
-            navigation.replace('Main');
-          }
-        } catch (error) {
-          console.error("Failed to fetch initial data:", error);
-          // Xử lý lỗi
-        }
-      } else {
-        console.log('isAuthenticated hoặc user là false trong useEffect');
+
+  useEffect(() => {
+    const loadSavedIdentifier = async () => {
+      const saved = await SecureStore.getItemAsync('savedIdentifier');
+      if (saved) {
+        setIdentifier(saved);
+        setRememberMe(true);
       }
     };
+    loadSavedIdentifier();
+  }, []);
 
-    fetchData(); // Gọi hàm fetchData
-  }, [isAuthenticated, user, firstLoginHandled, navigation, setFirstLoginHandled, fetchInitialData]);
+  // Log trạng thái từ store để kiểm tra thay đổi
+
+
   const handleLogin = async () => {
+    setLocalError(null);
+    useAuthStore.setState({ error: null });
+
     if (!identifier || !password) {
-      useAuthStore.setState({ error: 'Vui lòng điền đầy đủ thông tin.' });
+      setLocalError('Vui lòng điền đầy đủ Email/SĐT và mật khẩu.');
       return;
     }
 
-    await login(identifier, password);
+    if (rememberMe) {
+      await SecureStore.setItemAsync('savedIdentifier', identifier);
+    } else {
+      await SecureStore.deleteItemAsync('savedIdentifier');
+    }
+
+    const loginSuccess = await login(identifier, password);
+
+    if (loginSuccess) {
+      console.log('Đăng nhập thủ công thành công.');
+      const userNow = useAuthStore.getState().user;
+      const firstLoginHandledNow = useAuthStore.getState().firstLoginHandled;
+
+      if (userNow) {
+        const fetchDataSuccess = await fetchInitialData();
+        if (fetchDataSuccess) {
+          if (userNow.firstLogin && !firstLoginHandledNow) {
+            console.log('Phát hiện đăng nhập lần đầu, điều hướng đến ChangePassword...');
+            setFirstLoginHandled(true);
+            navigation.replace('ChangePassword');
+          } else {
+            console.log('Không phải đăng nhập lần đầu hoặc đã xử lý, điều hướng đến Main...');
+            navigation.replace('Main');
+          }
+        } else {
+          console.error('Tải dữ liệu ban đầu thất bại sau khi đăng nhập.');
+          useAuthStore.getState().logout();
+          setLocalError('Không thể tải dữ liệu cần thiết. Vui lòng thử lại.');
+        }
+      } else {
+        console.error('Login successful but user data is missing.');
+        useAuthStore.getState().logout();
+        setLocalError('Lỗi dữ liệu người dùng không hợp lệ.');
+      }
+    } else {
+      console.log('Đăng nhập thủ công thất bại.');
+    }
   };
+
+  // Log render
+  console.log('LoginScreen render');
+
+  const displayError = error || localError;
+  const isLoading = loading || fetchIniDataLoading;
+
   return (
-    <View className="flex-1 items-center justify-start gap-4 bg-white px-6 py-2">
+    <View className="flex-1 items-center justify-start gap-4 bg-white px-6 py-10">
       <Image
         source={require('../../assets/adaptive-icon.png')}
-        style={{ width: 200, height: 200 }}></Image>
-      <View className="flex w-full flex-col gap-6 space-y-2">
+        style={{ width: 150, height: 150, marginBottom: 20 }}
+      />
+      <View className="flex w-full flex-col gap-4">
         <View className="flex-row items-center border-b border-gray-300 pb-2">
-          <FontAwesome name="envelope" size={20} color="gray" className="mr-2" />
+          <FontAwesome name="envelope" size={20} color="gray" className="mr-3" />
           <TextInput
             placeholder="Email/Phone Number"
-            className="flex-1 text-base"
+            className="flex-1 py-2 text-base"
             value={identifier}
             onChangeText={setIdentifier}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
         </View>
 
         <View className="flex-row items-center border-b border-gray-300 pb-2">
-          <Ionicons name="lock-closed" size={20} color="gray" className="mr-2" />
+          <Ionicons name="lock-closed" size={20} color="gray" className="mr-3" />
           <TextInput
             placeholder="Password"
-            className="flex-1 text-base"
+            className="flex-1 py-2 text-base"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -81,23 +125,29 @@ export default function LoginScreen({ navigation }: Props) {
       <View className="mt-4 w-full flex-row items-center justify-between">
         <TouchableOpacity
           onPress={() => setRememberMe(!rememberMe)}
-          className="flex-row items-center">
-          <View className="mr-2 h-5 w-5 items-center justify-center rounded-sm border border-gray-400">
-            {rememberMe && <View className="h-3 w-3 rounded-sm bg-green-500" />}
+          className="flex-row items-center py-2"
+        >
+          <View
+            className={`mr-2 h-5 w-5 items-center justify-center rounded border ${rememberMe ? 'border-green-500 bg-green-500' : 'border-gray-400'}`}
+          >
+            {rememberMe && <Ionicons name="checkmark" size={14} color="white" />}
           </View>
-          <Text className="text-gray-600">Remember me</Text>
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Text className="font-semibold text-red-500">Forgot Password?</Text>
+          <Text className="text-gray-600">Ghi nhớ đăng nhập</Text>
         </TouchableOpacity>
       </View>
-      {error && (
-        <Text className="mt-2 w-full text-left text-red-500">{error}</Text>
-      )}
+
+      {displayError && <Text className="mt-2 w-full text-left text-red-500">{displayError}</Text>}
+
       <TouchableOpacity
-        className="mt-10 w-full items-center rounded-full bg-green-500 px-6 py-3"
-        onPress={handleLogin}>
-        <Text className="text-lg font-semibold text-white">Đăng Nhập</Text>
+        className={`mt-8 w-full items-center rounded-full px-6 py-3 ${isLoading ? 'bg-gray-400' : 'bg-green-500'}`}
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text className="text-lg font-semibold text-white">Đăng Nhập</Text>
+        )}
       </TouchableOpacity>
     </View>
   );

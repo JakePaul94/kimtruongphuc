@@ -9,6 +9,7 @@ import  QrCodeModule   from '~/native-modules/QRCodeReader';
 import { cropImageFromRoi, readQrCodeFromUri } from '~/utils/ImageProccessing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { uploadImage } from '~/apis/uploadApi';
+import { compeleteTaskLocation } from '~/apis/tasksApi';
 // import {  ExpoQRUriScanner } from 'expo-qr-uri-scanner';
 type Props = NativeStackScreenProps<RootStackParamList, 'PhotoCapture'>;
 const { width, height } = Dimensions.get('window');
@@ -18,7 +19,7 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const cameraRef = useRef<CameraView | null>(null);
   const route = useRoute<Props['route']>();
-  const { mode, cleaningTaskLocation, callback } = route.params;
+  const { mode, cleaningTaskLocation, waterReportTaskItem, cleaningCallback,waterReportCallback } = route.params;
   const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
   const [croppedPhotoUri, setCroppedPhotoUri] = useState<string | undefined>(undefined);
   useEffect(() => {
@@ -63,11 +64,14 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
           } catch (error: any) {
             console.error('Lỗi khi quét QR:', error?.message || error);
           }
-         
-          console.log(result);
+
           if (mode == 'cleaning' && result) {
-            if (result == cleaningTaskLocation?.templateLocation.qrCodeIdentifier) {
-              alert(`chuẩn rồi `);
+            console.log("kết quả quét :" , result.data , "và kết quả mong đợi :",cleaningTaskLocation?.templateLocation.qrCodeIdentifier)
+            if (result.data == cleaningTaskLocation?.templateLocation.qrCodeIdentifier) {
+              const completePhotoUrl = await uploadImage(photo.uri)
+              if(completePhotoUrl&& cleaningCallback){
+                await cleaningCallback(cleaningTaskLocation.id,completePhotoUrl)
+              }
               navigation.goBack();
             } else {
               alert(
@@ -76,9 +80,7 @@ export default function PhotoCaptureScreen({ navigation }: Props) {
             }
           }
           if (mode == 'water-report-normal') {
-            callback?.({
-              photoUri: photo.uri,
-            });
+           
             navigation.goBack();
           }
         }

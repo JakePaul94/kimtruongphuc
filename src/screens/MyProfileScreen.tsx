@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '~/navigation/AppNavigator';
 import { StackScreenProps } from '@react-navigation/stack';
 import AppHeader from '~/components/AppHeader';
+import { getRoleString } from '~/utils/authToken';
 
 type MyProfileScreenProps = StackScreenProps<RootStackParamList, 'Profile'>;
 
@@ -44,14 +45,17 @@ export default function MyProfileScreen({ navigation }: MyProfileScreenProps) {
     await logout();
     navigation.replace('Login');
   };
+  const profileSource = user?.profilePicture
+  ? { uri: user.profilePicture }
+  : require('../assets/default-avatar.png');
 
   return (
     <View className="flex-1 bg-gray-100">
       <AppHeader title="Thông tin cá nhân" onBackPress={navigation.goBack} />
-      <ScrollView className="flex-1 bg-gray-100 py-8  px-4">
+      <ScrollView className="flex-1 bg-gray-100 px-4  py-8">
         <View className="flex h-32 w-full flex-row justify-center">
           <Image
-            src={user?.profilePicture || require('../../assets/adaptive-icon.png')}
+            source={profileSource}
             className="h-24 w-24 rounded-full"
           />
         </View>
@@ -60,7 +64,7 @@ export default function MyProfileScreen({ navigation }: MyProfileScreenProps) {
         <ProfileItem label="Họ và tên" value={user?.fullName} />
         <ProfileItem label="Email" value={user?.email} />
         <ProfileItem label="Số điện thoại" value={user?.phoneNumber?.trim()} />
-        <ProfileItem label="Vai trò" value={user?.role} />
+        {user?.role && <ProfileItem label="Vai trò" value={getRoleString(user?.role)} />}
         {/* Thêm các thông tin cá nhân khác mà bạn muốn hiển thị */}
 
         <SectionTitle title="Tài khoản" />

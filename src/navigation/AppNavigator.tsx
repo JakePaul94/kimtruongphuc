@@ -32,11 +32,23 @@ import CreateUserScreen from '~/screens/users/CreateUserScreen';
 import CleaningTaskTemplateScreen from '~/screens/tasks/cleaningTask/CleaningTemplateListScreen';
 import CreateCleaningTaskTemplateScreen from '~/screens/tasks/cleaningTask/CreateCleaningTemplateScreen';
 import EditCleaningTaskTemplateScreen from '~/screens/tasks/cleaningTask/EditCleaningTemplateScreen';
-import { CleaningTaskLocation, CleaningTemplate, WaterReportTemplate } from '~/types/tasksType';
+import {
+  CleaningTaskLocation,
+  CleaningTemplate,
+  WaterReportTaskItem,
+  WaterReportTemplate,
+} from '~/types/tasksType';
 import WaterReportTemplateScreen from '~/screens/tasks/waterReport/WaterReportTemplateScreeen';
 import CreateWaterReportTemplateScreen from '~/screens/tasks/waterReport/CreateWaterReportTemplateScreen';
 import EditWaterReportTemplateScreen from '~/screens/tasks/waterReport/EditWaterReportTemplateScreen';
 import CleaningTaskScreen from '~/screens/roleBased/boilerWorker/CleaningTaskScreen';
+import WaterReportScreen from '~/screens/roleBased/boilerWorker/WaterReportScreen';
+import MaintenanceTaskExecutionScreen from '~/screens/roleBased/boilerWorker/MaintenanceTaskExecutionScreen';
+import TaskTemplateMenuScreen from '~/screens/roleBased/admin/TaskTemplateMenu';
+import CleaningTaskDetailScreen from '~/screens/tasks/cleaningTask/CleaningTaskDetailScreen';
+import WaterReportTaskDetailScreen from '~/screens/tasks/waterReport/WaterReportTaskDetailScreen';
+import MaintenanceTaskDetailScreen from '~/screens/tasks/maintainTask/MaintenanceTaskDetailScreen';
+import DeviceListForWorkerScreen from '~/screens/devices/DeviceListForWorkerScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -46,7 +58,15 @@ export type RootStackParamList = {
   PhotoCapture: {
     mode: 'cleaning' | 'water-report-with-AI' | 'water-report-normal';
     cleaningTaskLocation?: CleaningTaskLocation;
-    callback?: (data: { photoUri: string }) => void;
+    waterReportTaskItem?: WaterReportTaskItem;
+    cleaningCallback?: (locationId: number, photoUrl: string) => Promise<void>;
+    waterReportCallback?: (
+      itemId: number,
+      valueFromAI: string | null,
+      isQualify: boolean | null,
+      notes: string | null,
+      photoUrl: string
+    ) => Promise<void>;
   };
   ChangePassword: undefined;
   UserManagement: undefined;
@@ -55,6 +75,7 @@ export type RootStackParamList = {
   Loading: undefined;
   Profile: undefined;
   DeviceManagement: undefined;
+  TaskTemplateMenu: undefined;
   DeviceDetail: { deviceId: number };
   CleaningTask: { cleaningTaskId: number };
   CreateIncidentReport: { deviceId: number };
@@ -62,14 +83,20 @@ export type RootStackParamList = {
   CleaningTaskTemplate: undefined;
   CreateCleaningTaskTemplate: undefined;
   EditCleaningTaskTemplate: { template: CleaningTemplate };
+  WaterReport: { waterReportId: number };
   WaterReportTemplate: undefined;
   CreateWaterReportTemplate: undefined;
   EditWaterReportTemplate: { template: WaterReportTemplate };
+  MaintenanceTaskExecution: { deviceId: number };
   Setting: undefined;
   BoilerManagement: undefined;
   BoilerDetail: { boilerId: number };
   CreateBoiler: undefined;
   CreateDevice: { parentId?: number | null | undefined };
+  CleaningTaskDetail: { cleaningTaskId: number };
+  WaterReportTaskDetail: { waterReportTaskId: number };
+  MaintenanceTaskDetail: { maintenanceTaskId: number };
+  DeviceListForWorker:undefined
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -83,29 +110,25 @@ const LoadingScreen = () => (
 
 export default function AppNavigator() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const autoLoginLoading = useAuthStore((state) => state.autoLoginLoading);
   const user = useAuthStore((state) => state.user);
   const { fetchInitialData, isDataFetched, fetchIniDataLoading, setDataFetched } = useAppStore(
     (state) => state
   );
   const role = user?.role;
   const authLoading = useAuthStore((state) => state.loading);
-  useEffect(() => {
-    const loadData = async () => {
-      if (!isDataFetched) {
-        await fetchInitialData();
-        setDataFetched(true);
-      }
-    };
-    loadData();
-  }, [isAuthenticated, role]);
   const isLoading = authLoading || (isAuthenticated && role === 'admin' && !isDataFetched);
+  if (autoLoginLoading) {
+    return <LoadingScreen />;
+  }
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isLoading ? (
-        <Stack.Screen name="Loading" component={LoadingScreen} />
-      ) : !isAuthenticated ? (
+      {!isAuthenticated ? (
+        // Chưa đăng nhập (hoặc auto-login thất bại)
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
+          {/* Có thể thêm màn hình ForgotPassword ở đây nếu cần */}
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         </>
       ) : (
         <>
@@ -125,6 +148,8 @@ export default function AppNavigator() {
           <Stack.Screen name="Setting" component={SettingScreen} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           <Stack.Screen name="UserManagement" component={UserManagementScreen} />
+
+          <Stack.Screen name="TaskTemplateMenu" component={TaskTemplateMenuScreen} />
           <Stack.Screen name="UserDetail" component={UserDetailScreen} />
           <Stack.Screen name="CreateUser" component={CreateUserScreen} />
           <Stack.Screen name="BoilerManagement" component={BoilerManagementScreen} />
@@ -152,9 +177,18 @@ export default function AppNavigator() {
             component={CreateWaterReportTemplateScreen}
           />
           <Stack.Screen name="EditWaterReportTemplate" component={EditWaterReportTemplateScreen} />
+          <Stack.Screen
+            name="MaintenanceTaskExecution"
+            component={MaintenanceTaskExecutionScreen}
+          />
+          <Stack.Screen name="CleaningTaskDetail" component={CleaningTaskDetailScreen} />
+          <Stack.Screen name="WaterReportTaskDetail" component={WaterReportTaskDetailScreen} />
+          <Stack.Screen name="MaintenanceTaskDetail" component={MaintenanceTaskDetailScreen} />
+          <Stack.Screen name="WaterReport" component={WaterReportScreen} />
           <Stack.Screen name="PhotoCapture" component={PhotoCaptureScreen} />
           <Stack.Screen name="DeviceDetail" component={DeviceDetailScreen} />
           <Stack.Screen name="DeviceManagement" component={DeviceManagementScreen} />
+          <Stack.Screen name="DeviceListForWorker" component={DeviceListForWorkerScreen} />
           <Stack.Screen name="CreateDevice" component={CreateDeviceScreen} />
           <Stack.Screen name="CreateIncidentReport" component={CreateIncidentReportScreen} />
         </>

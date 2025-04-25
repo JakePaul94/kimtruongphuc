@@ -28,6 +28,7 @@ export const autoLoginApi = (
   userAgent: string,
   loginTimestamp: Date
 ) => {
+  console.log("Token gửi đi:", refreshToken)
   return axiosNoAuth.post('/auth/autologin', {
     refreshToken,
     ipAddress,

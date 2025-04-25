@@ -18,23 +18,30 @@ interface AppState {
     waterReportTemplates: WaterReportTemplate[]
     fetchIniDataLoading: boolean
     error: string | null
-    isDataFetched: boolean
+    isDataFetched: boolean // Flag để biết dữ liệu đã được fetch chưa
     setUsers: (users: UserAttributes[]) => void
     setBoilers: (boilers: BoilerAttributes[]) => void
     setDevices: (devices: DeviceAttributes[]) => void
     setBoilerUsers: (boilerUsers: BoilerUsersAttributes[]) => void
     setBoilerDevices: (boilerDevices: BoilerDevicesAttributes[]) => void
+    setCleaningTaskTemplates: (templates: CleaningTemplate[]) => void; // Thêm setter nếu cần
+    setWaterReportTemplates: (templates: WaterReportTemplate[]) => void; // Thêm setter nếu cần
     setDataFetched: (fetched: boolean) => void;
-    fetchInitialData: () => Promise<void>
+    fetchInitialData: () => Promise<boolean> // Trả về boolean thành công/thất bại
+    resetAppData: () => void; // Hàm để reset data khi logout
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set,get) => ({
     users: [],
     boilers: [],
     devices: [],
-    boilerUsers: [], cleaningTaskTemplates: [],waterReportTemplates:[], isDataFetched: false,
-    boilerDevices: [], fetchIniDataLoading: false,
+    boilerUsers: [],
+    boilerDevices: [],
+    cleaningTaskTemplates: [],
+    waterReportTemplates:[],
+    fetchIniDataLoading: false,
     error: null,
+    isDataFetched: false, // Khởi tạo là false
     setDataFetched: (fetched: boolean) => set({ isDataFetched: fetched }),
     setUsers: (users: UserAttributes[]) => set({ users }),
     setBoilers: (boilers: BoilerAttributes[]) => set({ boilers }),
@@ -43,8 +50,14 @@ export const useAppStore = create<AppState>((set) => ({
     setBoilerDevices: (boilerDevices: BoilerDevicesAttributes[]) => set({ boilerDevices }),
     setCleaningTaskTemplates: (cleaningTaskTemplates: CleaningTemplate[]) => set({ cleaningTaskTemplates }),
     setWaterReportTemplates: (waterReportTemplates: WaterReportTemplate[]) => set({ waterReportTemplates }),
+
     fetchInitialData: async () => {
-        console.log("khởi tạo dữ liệu ")
+        // Nếu đang fetch rồi thì không fetch nữa
+        if (get().fetchIniDataLoading) {
+            console.log("Đang trong quá trình tải dữ liệu ban đầu, bỏ qua lần gọi này.");
+            return false; // Hoặc true nếu coi như thành công vì đang chạy rồi
+        }
+        console.log("Bắt đầu tải dữ liệu ban đầu...");
         set({ fetchIniDataLoading: true, error: null })
         try {
             const [
@@ -52,7 +65,9 @@ export const useAppStore = create<AppState>((set) => ({
                 boilers,
                 devices,
                 boilerUsers,
-                boilerDevices, cleaningTaskTemplates,waterReportTemplates
+                boilerDevices,
+                cleaningTaskTemplates,
+                waterReportTemplates
             ] = await Promise.all([
                 getAllUsers(),
                 getAllBoilers(),
@@ -69,15 +84,39 @@ export const useAppStore = create<AppState>((set) => ({
                 devices,
                 boilerUsers,
                 boilerDevices,
-             cleaningTaskTemplates,
-                waterReportTemplates
+                cleaningTaskTemplates,
+                waterReportTemplates,
+                isDataFetched: true, // Đánh dấu đã fetch thành công
+                error: null
             })
+            console.log("Tải dữ liệu ban đầu thành công.");
+            return true; // Thành công
         } catch (error) {
-            console.error('Failed to fetch initial data:', error)
+            console.error('Lỗi khi tải dữ liệu ban đầu:', error)
             set({
-                fetchIniDataLoading: false, // Kết thúc quá trình tải dù có lỗi hay không
-                error: 'Failed to load data. Please try again later.', // Hiển thị lỗi nếu có
+                error: 'Không thể tải dữ liệu. Vui lòng thử lại sau.',
+                isDataFetched: false // Đánh dấu fetch thất bại
             })
+            return false; // Thất bại
+        } finally {
+            set({ fetchIniDataLoading: false }); // Luôn tắt loading khi kết thúc
         }
     },
+
+    // Hàm reset state của app store khi logout
+    resetAppData: () => {
+        console.log("Resetting App Store data...");
+        set({
+            users: [],
+            boilers: [],
+            devices: [],
+            boilerUsers: [],
+            boilerDevices: [],
+            cleaningTaskTemplates: [],
+            waterReportTemplates:[],
+            fetchIniDataLoading: false,
+            error: null,
+            isDataFetched: false, // Quan trọng: reset cờ này
+        });
+    }
 }))

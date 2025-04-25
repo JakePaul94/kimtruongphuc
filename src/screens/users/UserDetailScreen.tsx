@@ -24,6 +24,9 @@ const UserDetailScreen = () => {
     if (!date) return 'Chưa cập nhật';
     return new Date(date).toLocaleDateString('vi-VN');
   };
+  const profileSource = user?.profilePicture
+  ? { uri: user.profilePicture }
+  : require('../../assets/default-avatar.png');
 
   return (
     <View className="flex-1 bg-gray-100">
@@ -33,9 +36,7 @@ const UserDetailScreen = () => {
         {/* Profile Section */}
         <View className="mx-4 mt-4 items-center rounded-xl bg-white p-6 shadow-sm">
           <Image
-            source={{
-              uri: user.profilePicture || 'https://via.placeholder.com/150',
-            }}
+            source={profileSource}
             className="mb-4 h-32 w-32 rounded-full border-2 border-gray-200"
             defaultSource={{ uri: 'https://via.placeholder.com/150' }}
           />

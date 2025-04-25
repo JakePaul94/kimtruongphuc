@@ -95,7 +95,11 @@ const UserManagementScreen = () => {
             className="flex-row items-center bg-white p-4 mb-3 rounded-xl shadow-sm"
           >
             <Image
-              source={{ uri: item.profilePicture || '' }}
+              source={
+                item.profilePicture
+                  ? { uri: item.profilePicture }
+                  : require('../../assets/default-avatar.png')
+              }
               className="w-12 h-12 rounded-full mr-4 bg-gray-200"
             />
             <View className="flex-1">

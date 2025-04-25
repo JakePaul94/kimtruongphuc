@@ -35,7 +35,7 @@ export const cropImageFromRoi = async (photoUri: string, cropRegion: CropRegion)
   }
 };
 
-export const readQrCodeFromUri = async (imgUrl: string): Promise<string | null> => {
+export const readQrCodeFromUri = async (imgUrl: string): Promise<{ data: string } | null> => {
   try {
 
     const response = await api.post(`${API_BASE_URL}/img-process/scan-qr`, {

@@ -1,3 +1,6 @@
+import { BoilerAttributes } from "./boilerType";
+import { UserAttributes } from "./userType";
+
 export type CleaningTemplateLocation = {
     id: number;
     templateId: number;
@@ -121,3 +124,58 @@ export type WaterReportTemplateCreatePayload = {
     }[];
 };
 
+export type WaterReportTaskItem = {
+  id: number;
+  taskId: number;
+  templateItemId: number;
+  imageUrl?: string | null;
+  valueFromAI?: string | null;
+  isQualify?: boolean | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  templateItem: {
+    id: number;
+    templateId: number;
+    label: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+};
+
+export type WaterReportTask = {
+  id: number;
+  templateId: number;
+  boilerId: number;
+  assignedTo?: number | null;
+  scheduledDate: string;
+  status: 'pending' | 'in_process' | 'completed' | 'canceled';
+  createdBy?: number | null;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  boiler:BoilerAttributes;
+  assignee?: UserAttributes | null;
+  creator?: UserAttributes | null;
+  template: {
+    id: number;
+    name: string;
+    description: string;
+    boilerId: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  items: WaterReportTaskItem[];
+};
+
+
+export type SelfGeneratedMaintainTaskItem = {
+  title:string;
+  photoUrl:string;
+  result:string
+}
+export type SelfGeneratedMaintainTask = {
+  deviceId:number ;
+
+}

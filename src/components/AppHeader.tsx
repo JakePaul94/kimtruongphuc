@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 
 import Ionicons from '@expo/vector-icons/Ionicons'; 
 
@@ -23,14 +23,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     // Container chính của Header
     <View
-      // Nền trắng, đổ bóng nhẹ (tùy chỉnh shadow/elevation theo ý muốn)
-      // ios:shadow-sm android:elevation-3 là ví dụ, bạn có thể dùng shadow-md, elevation-5,...
       className={`bg-white ios:shadow-sm android:elevation-3 ${headerClassName}`}
     >
-      {/* Cấu hình Status Bar */}
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-
-      {/* Nội dung Header */}
+      <View className='h-12 bg-white'></View>
       <View className="flex-row items-center justify-between h-14 px-2">
         {/* Nút Back */}
         {showBackButton ? (

@@ -1,6 +1,6 @@
 import { DeviceAttributes } from "~/types/deviceType";
 import { useMemo } from 'react';
-import { BoilerDevicesAttributes } from "~/types/boilerType";
+import { BoilerAttributes, BoilerDevicesAttributes } from "~/types/boilerType";
 export const getDevicesDueSoon = (
     devices: DeviceAttributes[],
     dateKey: 'nextMaintenanceDate' | 'nextInspectionDate',
@@ -20,7 +20,17 @@ export const getDevicesDueSoon = (
     });
   };
 
-
+  export const getBoilerNameFromDevice = (
+    deviceId: number,
+    boilerDevices: BoilerDevicesAttributes[],
+    boilers: BoilerAttributes[]
+  ): string | null => {
+    const match = boilerDevices.find((bd) => bd.deviceId === deviceId);
+    if (!match) return null;
+  
+    const boiler = boilers.find((b) => b.id === match.boilerId);
+    return boiler?.name || null;
+  };
 
   export const useFilteredDevices = ({
     allDevices,

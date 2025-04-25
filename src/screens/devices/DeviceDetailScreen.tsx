@@ -147,6 +147,16 @@ export default function DeviceDetailScreen() {
   const handleSave = async () => {
     if (!editedDevice) return;
     setSaving(true);
+    if (editedDevice.maintenanceCycle) {
+      const match = editedDevice.maintenanceCycle.match(/^(\d+)\s*tháng$/i);
+      if (!match) {
+        Alert.alert(
+          'Định dạng không hợp lệ',
+          'Vui lòng nhập Chu kỳ bảo trì theo định dạng "x tháng" (ví dụ: 3 tháng).'
+        );
+        return;
+      }
+    }
     try {
       const dataToUpdate = { ...editedDevice };
       if (pickedImageUri) {
@@ -244,18 +254,17 @@ export default function DeviceDetailScreen() {
   const currentImageUri = pickedImageUri ?? displayDevice?.imageUrl; // Ưu tiên ảnh mới chọn
   const renderAdminActions = () => (
     <View className="mb-6 flex-row items-center justify-between">
-      <View className="mr-2  h-12 flex-1 overflow-hidden justify-center rounded-lg border border-gray-200 bg-slate-200">
+      <View className="mr-2  h-12 flex-1 justify-center overflow-hidden rounded-lg border border-gray-200 bg-slate-200">
         <Picker
           selectedValue={selectedRequestType}
-          style={{  width: '100%' }}
+          style={{ width: '100%' }}
           onValueChange={(itemValue, itemIndex) => {
             setSelectedRequestType(itemValue);
             if (itemValue === 'maintenance') {
-              navigation.navigate('CreateMaintenanceRequest', { deviceId: displayDevice.id });
             } else if (itemValue === 'inspection') {
-              navigation.navigate('CreateInspectionRequest', { deviceId: displayDevice.id });
+              // navigation.navigate('CreateInspectionRequest', { deviceId: displayDevice.id });
             } else if (itemValue === 'check') {
-              navigation.navigate('CreateCheckRequest', { deviceId: displayDevice.id });
+              // navigation.navigate('CreateCheckRequest', { deviceId: displayDevice.id });
             } // Reset the picker selection after navigation (optional)
             setTimeout(() => setSelectedRequestType(null), 500);
           }}>
@@ -298,20 +307,24 @@ export default function DeviceDetailScreen() {
 
   const renderBoilerWorkerActions = () => {
     const now = new Date();
-  
+
     const isNeedMaintenance =
       displayDevice.nextMaintenanceDate &&
-      (new Date(displayDevice.nextMaintenanceDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24) <= 15;
-  
+      (new Date(displayDevice.nextMaintenanceDate).getTime() - now.getTime()) /
+        (1000 * 60 * 60 * 24) <=
+        15;
+
     const isNeedInspection =
       displayDevice.nextInspectionDate &&
-      (new Date(displayDevice.nextInspectionDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24) <= 15;
-  
+      (new Date(displayDevice.nextInspectionDate).getTime() - now.getTime()) /
+        (1000 * 60 * 60 * 24) <=
+        15;
+
     return (
       <View className="mb-6 flex-row justify-between">
         <TouchableOpacity
           onPress={() => {
-            // Điều hướng đến màn hình bảo trì
+            navigation.navigate('MaintenanceTaskExecution', { deviceId: displayDevice.id });
           }}
           disabled={!isNeedMaintenance}
           className={`flex-1 items-center justify-center rounded-lg px-3 py-3 ${
@@ -319,7 +332,7 @@ export default function DeviceDetailScreen() {
           } mr-1`}>
           <Text className="text-sm font-semibold text-white">Bảo trì</Text>
         </TouchableOpacity>
-  
+
         <TouchableOpacity
           onPress={() => {
             // Điều hướng đến màn hình kiểm định
@@ -330,7 +343,7 @@ export default function DeviceDetailScreen() {
           } mx-1`}>
           <Text className="text-sm font-semibold text-white">Kiểm định</Text>
         </TouchableOpacity>
-  
+
         <TouchableOpacity
           onPress={() => {
             navigation.navigate('CreateIncidentReport', { deviceId: displayDevice.id });
@@ -341,7 +354,7 @@ export default function DeviceDetailScreen() {
       </View>
     );
   };
-  
+
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       <AppHeader

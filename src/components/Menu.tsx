@@ -85,6 +85,9 @@ export default function Menu({ isVisible, onClose }: MenuProps) {
   const handleNavigate = () => {
     onClose(); // Close the menu when any navigation item is pressed
   };
+  const profileSource = user?.profilePicture
+  ? { uri: user.profilePicture }
+  : require('../assets/default-avatar.png');
 
   return (
     <Modal visible={isVisible} transparent animationType="none">
@@ -105,10 +108,10 @@ export default function Menu({ isVisible, onClose }: MenuProps) {
               className="z-50 bg-white shadow-xl">
               {/* User Info Section */}
               <View className=" flex-row items-center gap-4 my-4 border-b border-gray-200 px-6 py-8">
-                <Image
-                  src={user?.profilePicture || require('../../assets/adaptive-icon.png')}
-                  className="h-12 w-12 rounded-full"
-                />
+              <Image
+  source={profileSource}
+  className="h-12 w-12 rounded-full"
+/>
                 <Text className="text-lg font-semibold text-black">{user?.fullName}</Text>
               </View>
 
@@ -127,7 +130,15 @@ export default function Menu({ isVisible, onClose }: MenuProps) {
                 navigation={navigation}
                 onNavigate={handleNavigate}
               />
-
+              {user?.role === "boiler_worker" && (<>
+                <MenuItem
+                    iconName="server-outline" // hoặc flame-outline
+                    label="Thiết bị trong lò hơi"
+                    screenName="DeviceListForWorker" // <<<--- GIẢ SỬ TÊN MÀN HÌNH
+                    navigation={navigation}
+                    onNavigate={handleNavigate}
+                  />
+              </>)}
               {/* --- Admin Specific Menu Items --- */}
               {user?.role === 'admin' && ( // Kiểm tra vai trò admin
                 <>
@@ -145,17 +156,17 @@ export default function Menu({ isVisible, onClose }: MenuProps) {
                     navigation={navigation}
                     onNavigate={handleNavigate}
                   />
-                  <MenuItem
+                  {/* <MenuItem
                     iconName="list-outline" // hoặc hardware-chip-outline
                     label="Quản lý thiết bị"
                     screenName="DeviceManagement" // <<<--- GIẢ SỬ TÊN MÀN HÌNH (có thể là 'DeviceList'?)
                     navigation={navigation}
                     onNavigate={handleNavigate}
-                  />
+                  /> */}
                   <MenuItem
                     iconName="briefcase-outline" // hoặc document-text-outline
-                    label="Quản lý công việc"
-                    screenName="CreateTask" // <<<--- GIẢ SỬ TÊN MÀN HÌNH
+                    label="Quản lý mẫu công việc"
+                    screenName="TaskTemplateMenu" // <<<--- GIẢ SỬ TÊN MÀN HÌNH
                     navigation={navigation}
                     onNavigate={handleNavigate}
                   />

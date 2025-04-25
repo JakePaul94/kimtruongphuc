@@ -1,4 +1,4 @@
-import { CleaningTemplate, CreateCleaningTemplatePayload, CleaningTask, WaterReportItem, WaterReportTemplate, WaterReportTemplateCreatePayload, WaterReportTemplateUpdatePayload } from '~/types/tasksType';
+import { CleaningTemplate, CreateCleaningTemplatePayload, CleaningTask, WaterReportItem, WaterReportTemplate, WaterReportTemplateCreatePayload, WaterReportTemplateUpdatePayload, WaterReportTask, SelfGeneratedMaintainTaskItem } from '~/types/tasksType';
 import api from './axiosInstance';
 
 
@@ -34,9 +34,19 @@ export const updateCleaningTaskTemplate = async (cleaningTaskTemplateId: number,
   }
 }
 
-export const acceptTask = async (cleaningTaskId: number): Promise<any> => {
+export const acceptCleaningTask = async (cleaningTaskId: number): Promise<any> => {
   try {
     const response = await api.put(`/cleaning-tasks/tasks/${cleaningTaskId}/accept`)
+    return response.data
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+export const acceptWaterReportTask = async (waterReportTaskId: number): Promise<any> => {
+  try {
+    const response = await api.put(`/water-report-tasks/tasks/${waterReportTaskId}/accept`)
     return response.data
   }
   catch (error) {
@@ -56,7 +66,7 @@ export const getCleaningTaskById = async (cleaningTaskId: number): Promise<Clean
 }
 export const compeleteTaskLocation = async (locationId: number, notes: string | null, photoUrl: string): Promise<any> => {
   try {
-    const response = await api.put(`/cleaning-tasks/tasks/locations/${locationId}/complete`)
+    const response = await api.put(`/cleaning-tasks/tasks/locations/${locationId}/complete`, { notes: notes, photoUrl: photoUrl })
     return response.data
   }
   catch (error) {
@@ -108,3 +118,121 @@ export const deleteWaterReportTemplate = async (cleaningTaskTemplateId: number):
   }
 }
 
+export const getWaterReportById = async (waterReportId: number): Promise<WaterReportTask> => {
+  try {
+    const response = await api.get(`/water-report-tasks/tasks/${waterReportId}`)
+    return response.data
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+export const compeleteWaterReportItem = async (itemId: number, valueFromAI: string | null, isQualify: boolean | null, notes: string | null, photoUrl: string): Promise<any> => {
+  try {
+    const response = await api.put(`/water-report-tasks/tasks/items/${itemId}/complete`, { notes: notes, valueFromAI: valueFromAI, isQualify: isQualify, photoUrl: photoUrl })
+    return response.data
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+export const generateAndCompleteTask = async (deviceId: number, items: SelfGeneratedMaintainTaskItem[], notes: string | null): Promise<any> => {
+  try {
+    const response = await api.post('/maintenance-tasks/tasks/create-complete', { notes: notes, deviceId: deviceId, items: items })
+    return response.data
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+interface AllTasksResponse {
+  allCleaningTasks: {
+    id: number;
+    templateId: number;
+    boilerId: number;
+    createdBy: number | null;
+    assignedTo: number | null;
+    status: "pending" | "in_process" | "completed" | "cancelled";
+    scheduledDate: string; //<ctrl98>-MM-DD
+    completedAt: string | null; // ISO 8601 format
+    createdAt: string; // ISO 8601 format
+    updatedAt: string;
+    assignedUser: {
+      id: number,
+      fullName: string,
+      email: string,
+      profilePicture: string | null
+    } | null
+    ;
+    boiler: {
+      id: number,
+      name: string
+    };
+    template: {
+      name: string
+    }// ISO 8601 format
+  }[];
+  allWaterReportTasks: {
+    id: number;
+    templateId: number;
+    boilerId: number;
+    assignedTo: number | null;
+    scheduledDate: string; //<ctrl98>-MM-DD
+    status: "pending" | "in_process" | "completed" | "cancelled";
+    createdBy: number | null;
+    completedAt: string | null; // ISO 8601 format
+    createdAt: string; // ISO 8601 format
+    updatedAt: string; // ISO 8601 format
+    assignedUser: {
+      id: number,
+      fullName: string,
+      email: string,
+      profilePicture: string | null
+    } | null
+    ;
+    boiler: {
+      id: number,
+      name: string
+    };
+    template: {
+      name: string
+    }
+  }[];
+  allMaintenanceTasks: {
+    id: number;
+    deviceId: number;
+    templateId: number | null;
+    assignedTo: number | null;
+    createdBy: number | null;
+    scheduledDate: string; // ISO 8601 format (có thể có thời gian)
+    completedAt: string | null; // ISO 8601 format
+    notes: string | null;
+    status: "pending" | "in_process" | "completed" | "cancelled";
+    createdAt: string; // ISO 8601 format
+    updatedAt: string; // ISO 8601 format
+    device?: {
+      id: number;
+      deviceName: string;
+      boilers: {
+        name: "Lò hơi Habeco"
+      }[] | null
+    };
+  }[];
+}
+export const getAllTasksByDateRange = async (startDate: string, endDate: string): Promise<AllTasksResponse> => {
+  try {
+    const url = `/tasks/?startDate=${startDate}&endDate=${endDate}`;
+    const response = await api.get(url);
+    console.log(startDate, endDate)
+    return response.data;
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+}

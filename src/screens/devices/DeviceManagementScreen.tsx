@@ -18,6 +18,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import Navbar from '~/components/Navbar';
 
 dayjs.locale('vi');
 dayjs.extend(relativeTime);
@@ -120,7 +121,7 @@ const DeviceManagementScreen = () => {
     const date = dayjs(dateString);
     const now = dayjs();
     const diff = date.diff(now, 'day');
-    return diff >= 0 && diff <= 15;
+    return diff > 0 && diff < 15;
   };
 
   const filterAndRenderDevices = useCallback(() => {
@@ -217,13 +218,12 @@ const DeviceManagementScreen = () => {
   }
 
   return (
-    <View className="flex-1 bg-green-50">
-      <AppHeader title="Quản lý thiết bị" onBackPress={navigation.goBack} />
+    <View className="flex-1 bg-red-400">
+      <Navbar/>
 
       {/* Filters */}
-      <View className="px-4 py-4 bg-white z-20 shadow-sm">
-        <Text className="mb-2 text-base font-semibold text-gray-700">Bộ lọc</Text>
-        <View className="flex-row space-x-2">
+      <View style={{borderColor:"rgba(0,222,0,0.2)",borderTopWidth:0.2,borderBottomWidth:0.2}} className="px-4 py-2  bg-white z-20 shadow-sm">
+        <View className="flex-row gap-4 space-x-2">
           <View className="flex-1">
             <Text className="mb-1 text-sm font-medium text-gray-600">Lọc theo lò hơi</Text>
             <DropDownPicker
@@ -256,7 +256,7 @@ const DeviceManagementScreen = () => {
         </View>
       </View>
 
-      <View className="flex-1 bg-green-50 p-4">
+      <View className="flex-1 bg-red-400 p-4">
         <FlatList
           data={deviceTree}
           renderItem={({ item }) => renderDevice(item)}

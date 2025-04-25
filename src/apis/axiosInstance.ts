@@ -19,6 +19,7 @@ api.interceptors.request.use(async (config) => {
 
     if (refreshToken) {
       try {
+        console.log("token gửi đi để refresh:", refreshToken)
         const response = await axios.post(`${API_BASE_URL}/auth/refresh-token`, {
           refreshToken,
         });

@@ -3,7 +3,6 @@ export type DeviceAttributes = {
     deviceCode: string;
     deviceName: string;
     parentId: number | null;
-    boilerId?: number | null;
     model?: string;
     brand?: string;
     origin?: string;
