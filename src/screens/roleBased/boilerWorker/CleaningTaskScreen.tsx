@@ -123,11 +123,7 @@ export default function CleaningTaskScreen() {
             </View>
           ))}
 
-        <TouchableOpacity
-          onPress={handleSubmit}
-          className="mt-6 items-center rounded-2xl bg-green-600 py-3 shadow-md">
-          <Text className="text-base font-semibold text-white">Hoàn thành công việc</Text>
-        </TouchableOpacity>
+       
       </ScrollView>
     </View>
   );

@@ -118,7 +118,7 @@ export const deleteWaterReportTemplate = async (cleaningTaskTemplateId: number):
   }
 }
 
-export const getWaterReportById = async (waterReportId: number): Promise<WaterReportTask> => {
+export const getWaterReportById = async (waterReportId: number): Promise<any> => {
   try {
     const response = await api.get(`/water-report-tasks/tasks/${waterReportId}`)
     return response.data
@@ -128,8 +128,20 @@ export const getWaterReportById = async (waterReportId: number): Promise<WaterRe
     throw error;
   }
 }
+export const getMaintenanceTaskById = async (maintenanceTaskId: number): Promise<any> => {
+  try {
+    const response = await api.get(`/maintenance-tasks/task/${maintenanceTaskId}`)
+    console.log(response.data)
+    return response.data
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
 export const compeleteWaterReportItem = async (itemId: number, valueFromAI: string | null, isQualify: boolean | null, notes: string | null, photoUrl: string): Promise<any> => {
   try {
+    console.log(photoUrl)
     const response = await api.put(`/water-report-tasks/tasks/items/${itemId}/complete`, { notes: notes, valueFromAI: valueFromAI, isQualify: isQualify, photoUrl: photoUrl })
     return response.data
   }
@@ -138,7 +150,17 @@ export const compeleteWaterReportItem = async (itemId: number, valueFromAI: stri
     throw error;
   }
 }
+export const completeWaterReport = async (itemId: number): Promise<any> => {
+  try {
 
+    const response = await api.put(`/water-report-tasks/tasks/${itemId}/status`, { status: "completed" })
+    return response.data
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
 export const generateAndCompleteTask = async (deviceId: number, items: SelfGeneratedMaintainTaskItem[], notes: string | null): Promise<any> => {
   try {
     const response = await api.post('/maintenance-tasks/tasks/create-complete', { notes: notes, deviceId: deviceId, items: items })

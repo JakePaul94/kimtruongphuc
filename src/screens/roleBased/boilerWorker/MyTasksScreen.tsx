@@ -61,7 +61,7 @@ export default function MyTasksScreen() {
     setErrorMessage(null);
     try {
       const data = await getAllTasksForMeAPI(selectedDate);
-
+      console.log(data)
       // Lọc tasks theo tab hiện tại
       const filteredTasks = data.filter((task) => {
         if (activeTab === 'available') {

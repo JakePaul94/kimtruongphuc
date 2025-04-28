@@ -3,10 +3,15 @@ import { View, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-nat
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '~/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '~/navigation/AppNavigator';
 
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 export default function ChangePasswordScreen() {
-  const { changePassword } = useAuthStore();
-  const navigation = useNavigation();
+  const changePassword = useAuthStore(state => state.changePassword);
+  const logout = useAuthStore(state => state.logout);
+  const navigation = useNavigation<NavigationProp>();
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -30,8 +35,9 @@ export default function ChangePasswordScreen() {
     try {
       setLoading(true);
       await changePassword(oldPassword, newPassword);
+      await logout()
       Alert.alert('Thành công', 'Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.');
-      navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
+      navigation.navigate('Login');
     } catch (error) {
       Alert.alert('Lỗi', 'Đổi mật khẩu thất bại. Vui lòng thử lại.');
     } finally {

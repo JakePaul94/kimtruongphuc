@@ -1,77 +1,149 @@
-import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { BarChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { twMerge } from 'tailwind-merge';
 import Navbar from '~/components/Navbar';
 import { useAppStore } from '~/store/useAppStore';
+import { getAllTasksByDateRange } from '~/apis/tasksApi';
+import dayjs from 'dayjs';
+import { useFocusEffect } from '@react-navigation/native';
+import { isNearDate } from '~/utils/deviceHelpers';
 
 const screenWidth = Dimensions.get('window').width;
 
 const DashboardScreen = () => {
   const { users, devices, boilers } = useAppStore();
-  const productionData = [50, 80, 40, 90, 60, 100, 75];
-  const benchmarkData = [60, 70, 55, 80, 50, 95, 70];
-  const tasks = 121;
-  return (
-    <View className="flex-1">
-      <Navbar />
-      <ScrollView className="flex-1 p-4 bg-green-50">
-        {/* Header */}
+  const [cleaningTasks, setCleaningTasks] = useState<any[]>([]);
+  const [waterReportTasks, setWaterReportTasks] = useState<any[]>([]);
+  const [maintenanceTasks, setMaintenanceTasks] = useState<any[]>([]);
 
-        {/* Cards */}
-        <View className="mb-6 flex-row flex-wrap justify-between">
-          <StatCard title="Nhân viên" value={users.length} progress={1} color="bg-black" />
-          <StatCard title="Thiết bị" value={devices.length} progress={0.95} color="bg-blue-500" />
-          <StatCard title="Lò hơi" value={boilers.length} progress={1} color="bg-pink-500" />
-          <StatCard title="Nhiệm vụ trong tháng" value={tasks} progress={0.86} color="bg-black" />
+  const taskLength = cleaningTasks.length + waterReportTasks.length 
+  const taskCompleted = cleaningTasks.filter(task => task.status === "completed").length + waterReportTasks.filter(task => task.status === "completed").length
+  const nearMaintenanceDevices = devices.filter(d=>isNearDate(d.nextMaintenanceDate)).length
+  const nearInspectionDevices = devices.filter(d=>isNearDate(d.nextInspectionDate)).length
+  const fetchTasks = useCallback(async () => {
+    try {
+      const startDate = dayjs().subtract(7, 'day').format('YYYY-MM-DD');
+      const endDate = dayjs().format('YYYY-MM-DD');
+      const allTaskByRange = await getAllTasksByDateRange(startDate, endDate);
+      setCleaningTasks(allTaskByRange.allCleaningTasks || []);
+      setWaterReportTasks(allTaskByRange.allWaterReportTasks || []);
+      setMaintenanceTasks(allTaskByRange.allMaintenanceTasks || []);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks();
+    }, [fetchTasks])
+  );
+  // Sample data for boilers' production
+  const boilerProductionData = {
+    labels: boilers.map((b, i) => `${b.name}`),
+    datasets: [
+      {
+        data: boilers.map(() => Math.floor(Math.random() * 100) + 50), // Random data for demo
+        color: () => '#3b82f6', // Blue-500
+        strokeWidth: 2,
+      },
+    ],
+  };
+
+  return (
+    <View className="flex-1 bg-gray-100">
+      <Navbar />
+      <ScrollView className="flex-1 p-5">
+        {/* Header */}
+        <View className="mb-6">
+          <Text className="text-2xl font-bold text-gray-800">Tổng quan vận hành</Text>
         </View>
-        {/* Chart */}
-        <View className="rounded-2xl bg-white p-4 shadow-md">
-          <View className="mb-2 flex-row items-center justify-between">
-            <Text className="text-base font-semibold">Sản lượng</Text>
-            <View className="flex-row space-x-2">
+
+        {/* Enhanced StatCards */}
+        <View className="mb-8 flex-row flex-wrap justify-between">
+          <StatCard
+            title="Nhân viên"
+            icon="people"
+            value={users.length}
+            details={[
+              { label: 'Đang hoạt động', value: users.length },
+              { label: 'Ca ngày', value: Math.floor(users.length * 0.6) },
+            ]}
+            progress={1}
+            color="bg-blue-600"
+          />
+          <StatCard
+            title="Thiết bị"
+            icon="hardware-chip"
+            value={devices.length}
+            details={[
+              { label: 'Gần kiểm định', value: nearInspectionDevices},
+              { label: 'Gần bảo trì', value: nearMaintenanceDevices },
+            ]}
+            progress={1}
+            color="bg-green-600"
+          />
+          <StatCard
+            title="Lò hơi"
+            icon="flame"
+            value={boilers.length}
+            details={[
+              { label: 'Hoạt động', value: boilers.length },
+              { label: 'Hiệu suất', value: '98%' },
+            ]}
+            progress={1}
+            color="bg-red-600"
+          />
+          <StatCard
+            title="Nhiệm vụ"
+            icon="checkmark-circle"
+            value={taskLength}
+            details={[
+              { label: 'Hoàn thành', value: taskCompleted },
+              { label: 'Chưa làm', value: taskLength -  taskCompleted},
+            ]}
+            progress={taskCompleted/taskLength}
+            color="bg-purple-600"
+          />
+        </View>
+
+        {/* Bar Chart for Boiler Production */}
+        <View className="rounded-2xl bg-white p-5 shadow-lg">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="text-lg font-semibold text-gray-800">Sản lượng lò hơi</Text>
+            <View className="flex-row space-x-3">
               <FilterButton label="Tháng" active />
               <FilterButton label="Tuần" />
               <FilterButton label="Hôm nay" />
             </View>
           </View>
-          <LineChart
-            data={{
-              labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-              datasets: [
-                {
-                  data: productionData,
-                  color: () => '#3c56ac', // Sản lượng - màu đen
-                  strokeWidth: 2,
-                },
-                {
-                  data: benchmarkData,
-                  color: () => '#ec4899', // Benchmark - màu hồng (Tailwind: pink-500)
-                  strokeWidth: 2,
-                },
-              ],
-              legend: ['Sản lượng', 'Chuẩn'],
-            }}
-            width={screenWidth - 32}
-            height={220}
-            chartConfig={{
-              backgroundGradientFrom: '#ffffff',
-              backgroundGradientTo: '#ffffff',
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
-              propsForDots: {
-                r: '4',
-                strokeWidth: '2',
-                stroke: '#fff',
-              },
-            }}
-            bezier
-            style={{
-              borderRadius: 16,
-            }}
-          />
+          <BarChart
+  data={boilerProductionData}
+  width={screenWidth - 90}
+  height={240}
+  yAxisLabel=""
+  yAxisSuffix=" tấn"
+  chartConfig={{
+    backgroundGradientFrom: '#ffffff',
+    backgroundGradientTo: '#ffffff',
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
+    barPercentage: 0.4,
+    propsForBackgroundLines: {
+      strokeDasharray: '',
+      stroke: '#e5e7eb',
+    },
+  }}
+  style={{
+    borderRadius: 16,
+    padding: 10,
+  }}
+  showValuesOnTopOfBars
+  fromZero
+/>
         </View>
       </ScrollView>
     </View>
@@ -80,20 +152,35 @@ const DashboardScreen = () => {
 
 const StatCard = ({
   title,
+  icon,
   value,
+  details,
   progress,
   color,
 }: {
   title: string;
+  icon: string;
   value: number;
+  details: { label: string; value: string | number }[];
   progress: number;
   color: string;
 }) => {
   return (
-    <View className="mb-4 w-[48%] rounded-2xl bg-white p-4 shadow-md">
-      <Text className="text-sm text-gray-500">{title}</Text>
-      <Text className="text-lg font-bold">{value}</Text>
-      <View className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+    <View className="mb-5 w-[48%] rounded-2xl bg-white p-5 shadow-lg">
+      <View className="mb-3 flex-row items-center justify-between">
+        <Text className="text-lg font-semibold text-gray-800">{title}</Text>
+        <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={24} color="#374151" />
+      </View>
+      <Text className="text-2xl font-bold text-gray-900">{value}</Text>
+      <View className="mt-3">
+        {details.map((detail, index) => (
+          <View key={index} className="mb-2 flex-row justify-between">
+            <Text className="text-sm text-gray-600">{detail.label}</Text>
+            <Text className="text-sm font-medium text-gray-800">{detail.value}</Text>
+          </View>
+        ))}
+      </View>
+      <View className="mt-4 h-2 w-full overflow-hidden rounded-full bg-gray-200">
         <View style={{ width: `${progress * 100}%` }} className={`h-full ${color} rounded-full`} />
       </View>
     </View>
@@ -104,10 +191,10 @@ const FilterButton = ({ label, active }: { label: string; active?: boolean }) =>
   return (
     <TouchableOpacity
       className={twMerge(
-        'rounded-full px-3 py-1',
-        active ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'
+        'rounded-full px-4 py-2',
+        active ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
       )}>
-      <Text className={active ? 'text-sm font-medium text-white' : 'text-sm text-gray-600'}>
+      <Text className={twMerge('text-sm font-medium', active ? 'text-white' : 'text-gray-700')}>
         {label}
       </Text>
     </TouchableOpacity>

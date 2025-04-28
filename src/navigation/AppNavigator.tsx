@@ -4,7 +4,7 @@ import { View, ActivityIndicator } from 'react-native';
 import LoginScreen from '~/screens/LoginScreen';
 import ChangePasswordScreen from '~/screens/ChangePasswordScreen';
 import WaterQualityReportScreen from '~/screens/WaterQualityReportScreen';
-import CleaningCheckScreen from '~/screens/CleaningCheckScreen';
+
 import PhotoCaptureScreen from '~/screens/PhotoCaptureScreen';
 import BottomTabAdmin from './BottomTabAdmin';
 import BottomTabBoilerManager from './BottomTabBoilerManager';
@@ -168,7 +168,6 @@ export default function AppNavigator() {
             component={EditCleaningTaskTemplateScreen}
           />
           <Stack.Screen name="CleaningTask" component={CleaningTaskScreen} />
-          <Stack.Screen name="CleaningCheck" component={CleaningCheckScreen} />
           <Stack.Screen name="CleaningTaskExecution" component={CleaningTaskExecutionScreen} />
 
           <Stack.Screen name="WaterReportTemplate" component={WaterReportTemplateScreen} />

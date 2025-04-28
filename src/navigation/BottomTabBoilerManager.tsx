@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 
 import DashBoardScreen from '~/screens/DashBoardScreen';
-import TaskManagementScreen from '~/screens/roleBased/boilerManager/TaskManagementScreen';
+
 import BoilerStatusScreen from '~/screens/roleBased/boilerManager/BoilerStatusScreen';
 import SettingScreen from '~/screens/SettingScreen';
 
@@ -37,7 +37,6 @@ export default function BottomTabBoilerManager() {
       })}
     >
       <Tab.Screen name="DashBoard" component={DashBoardScreen} options={{ title: 'Trang chính' }} />
-      <Tab.Screen name="Tasks" component={TaskManagementScreen} options={{ title: 'Quản lý Task' }} />
       <Tab.Screen name="BoilerStatus" component={BoilerStatusScreen} options={{ title: 'Trạng thái lò' }} />
       <Tab.Screen name="Settings" component={SettingScreen} options={{ title: 'Cài đặt' }} />
     </Tab.Navigator>

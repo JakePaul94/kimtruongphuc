@@ -6,6 +6,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useCallback, useState } from 'react';
@@ -15,7 +16,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AppHeader from '~/components/AppHeader';
 import { RootStackParamList } from '~/navigation/AppNavigator';
 import { WaterReportTask, WaterReportTaskItem } from '~/types/tasksType';
-import { compeleteWaterReportItem, getWaterReportById } from '~/apis/tasksApi';
+import { compeleteWaterReportItem, completeWaterReport, getWaterReportById } from '~/apis/tasksApi';
+import LoadingOverlay from '~/components/LoadingOverlay'; // giả sử bạn có 1 LoadingOverlay riêng
 
 type WaterReportRouteProp = RouteProp<RootStackParamList, 'WaterReport'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -27,22 +29,23 @@ export default function WaterReportTaskScreen() {
 
   const [task, setTask] = useState<WaterReportTask | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // state mới
 
+  const reloadTask = async () => {
+    try {
+      setLoading(true);
+      const data = await getWaterReportById(waterReportId);
+      setTask(data);
+    } catch (error) {
+      console.error('Lỗi khi reload công việc mẫu nước:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   useFocusEffect(
     useCallback(() => {
-      const fetchTask = async () => {
-        try {
-          const data = await getWaterReportById(waterReportId);
-
-          setTask(data);
-        } catch (error) {
-          console.error('Lỗi khi lấy công việc mẫu nước:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchTask();
+      reloadTask();
     }, [waterReportId])
   );
 
@@ -60,20 +63,31 @@ export default function WaterReportTaskScreen() {
     isQualify: boolean | null,
     notes: string | null,
     photoUrl: string
-  ) => {
+  ): Promise<void> => {
     await compeleteWaterReportItem(itemId, valueFromAI, isQualify, notes, photoUrl);
   };
-
+ 
   const handleCapturePhoto = (itemId: number, item: WaterReportTaskItem) => {
     navigation.navigate('PhotoCapture', {
-      mode: 'water-report-with-AI',
+      mode: 'water-report-normal',
       waterReportTaskItem: item,
       waterReportCallback: completeItemCallback,
     });
   };
 
-  const handleSubmit = () => {
-    navigation.goBack();
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true); // bật overlay
+      await completeWaterReport(waterReportId);
+      Alert.alert('Thành công', 'Đã hoàn thành báo cáo.', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error) {
+      console.error('Lỗi khi hoàn thành báo cáo:', error);
+      Alert.alert('Lỗi', 'Không thể hoàn thành báo cáo. Vui lòng thử lại.');
+    } finally {
+      setSubmitting(false); // tắt overlay
+    }
   };
 
   if (loading || !task) {
@@ -83,6 +97,8 @@ export default function WaterReportTaskScreen() {
       </View>
     );
   }
+
+  const allItemsHavePhotos = task.items.every((item) => !!item.imageUrl);
 
   return (
     <View className="flex-1 bg-white">
@@ -124,12 +140,16 @@ export default function WaterReportTaskScreen() {
           </View>
         ))}
 
-        <TouchableOpacity
-          onPress={handleSubmit}
-          className="mt-6 items-center rounded-2xl bg-green-600 py-3 shadow-md">
-          <Text className="text-base font-semibold text-white">Hoàn thành báo cáo</Text>
-        </TouchableOpacity>
+        {allItemsHavePhotos && (
+          <TouchableOpacity
+            onPress={handleSubmit}
+            className="mt-6 items-center rounded-2xl bg-green-600 py-3 shadow-md">
+            <Text className="text-base font-semibold text-white">Hoàn thành báo cáo</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
+
+      {submitting && <LoadingOverlay />}
     </View>
   );
 }

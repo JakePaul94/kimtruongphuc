@@ -1,248 +1,183 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image } from 'react-native';
-import { RouteProp, useRoute } from '@react-navigation/native';
-import { Avatar, ListItem } from '@rneui/themed';
-import { useAppStore } from '~/store/useAppStore'; // Giả sử bạn có store quản lý users
+import { View, Text, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { getMaintenanceTaskById } from '~/apis/tasksApi';
 import { RootStackParamList } from '~/navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AppHeader from '~/components/AppHeader';
+import { Avatar } from '@rneui/themed';
+import { formatYMDtoDMY } from '~/utils/timeHelper';
+import { getStatusColor, getStatusText } from '~/utils/tasksHelper';
+import NeonLine from '~/components/LineNeon';
 
-// Định nghĩa type cho WaterReportTaskDetail (dựa trên response bạn cung cấp)
-interface WaterReportItem {
+type MaintenanceTaskItem = {
   id: number;
   taskId: number;
-  templateItemId: number;
-  imageUrl: string | null;
-  valueFromAI: any | null; // Có thể cần định nghĩa type cụ thể
-  isQualify: boolean | null;
-  notes: string | null;
+  title: string;
+  result: string;
+  photoUrl: string;
+  status: string;
   createdAt: string;
   updatedAt: string;
-  templateItem?: {
-    id: number;
-    templateId: number;
-    label: string;
-    description: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-}
-interface WaterReportTaskDetail {
+};
+
+type MaintenanceTaskDetail = {
   id: number;
-  templateId: number;
-  boilerId: number;
-  assignedTo: number | null;
+  deviceId: number;
+  templateId: number | null;
+  assignedTo: number;
+  createdBy: number;
   scheduledDate: string;
-  status: 'pending' | 'completed' | 'cancelled' | string;
-  createdBy: number | null;
   completedAt: string | null;
+  notes: string;
+  status: string;
   createdAt: string;
   updatedAt: string;
-  boiler?: {
+  device: {
     id: number;
-    name: string;
-    location: string;
-    description: string;
-    createdAt: string;
-    updatedAt: string;
-  } | null;
-  assignee?: {
+    deviceName: string;
+  };
+  items: MaintenanceTaskItem[];
+  assignedUser: {
     id: number;
     fullName: string;
-    email: string;
+    profilePicture: string | null;
   } | null;
-  creator: any | null; // Có thể cần định nghĩa type cụ thể
-  template?: {
-    id: number;
-    name: string;
-    description: string;
-    boilerId: number;
-    createdAt: string;
-    updatedAt: string;
-  } | null;
-  items?: WaterReportItem[];
-}
+};
 
-type EditCleaningTaskTemplateRouteProp = RouteProp<RootStackParamList, 'MaintenanceTaskDetail'>;
+type MaintenanceTaskDetailRouteProp = RouteProp<RootStackParamList, 'MaintenanceTaskDetail'>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-const MaintenanceTaskDetailScreen = () => {
-  const route = useRoute<EditCleaningTaskTemplateRouteProp>();
-  const { maintenanceTaskId } = route.params;
-  const { users } = useAppStore(); // Vẫn cần users store để hiển thị avatar nếu assignee không đầy đủ
 
-  const [task, setTask] = useState<WaterReportTaskDetail | null>(null);
+export default function MaintenanceTaskDetailScreen() {
+  const route = useRoute<MaintenanceTaskDetailRouteProp>();
+  const { maintenanceTaskId } = route.params;
+  const navigation = useNavigation<NavigationProp>();
+  const [taskDetail, setTaskDetail] = useState<MaintenanceTaskDetail | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Giả sử bạn có hàm để fetch chi tiết WaterReportTask dựa trên taskId
-    const fetchTaskDetails = async (id: number) => {
-      // Thay thế đoạn này bằng logic gọi API thực tế của bạn
-      console.log(`Fetching details for Water Report Task ID: ${id}`);
-      const dummyTask: WaterReportTaskDetail = {
-        id: 11,
-        templateId: 1,
-        boilerId: 1,
-        assignedTo: null,
-        scheduledDate: '2025-04-22',
-        status: 'pending',
-        createdBy: null,
-        completedAt: null,
-        createdAt: '2025-04-22T10:30:00.000Z',
-        updatedAt: '2025-04-22T10:30:00.000Z',
-        boiler: {
-          id: 1,
-          name: 'Lò hơi Habeco',
-          location: 'Hoàng Hoa Thám - Đống Đa - Hà Nội',
-          description: 'Lò hơi  Công ty sản xuất rượu bia Hà Nội',
-          createdAt: '2025-04-12T04:29:23.000Z',
-          updatedAt: '2025-04-12T04:29:23.000Z',
-        },
-        assignee: null,
-        creator: null,
-        template: {
-          id: 1,
-          name: 'Báo cáo chất lượng nước hằng ngày',
-          description:
-            'Mẫu báo cáo chật lượng nước hằng ngày cho lò hơi sẽ tự sinh nhiệm vụ mỗi ngày',
-          boilerId: 1,
-          createdAt: '2025-04-12T04:56:20.000Z',
-          updatedAt: '2025-04-18T00:36:27.000Z',
-        },
-        items: [
-          {
-            id: 23,
-            taskId: 11,
-            templateItemId: 1,
-            imageUrl: null,
-            valueFromAI: null,
-            isQualify: null,
-            notes: null,
-            createdAt: '2025-04-22T10:30:00.000Z',
-            updatedAt: '2025-04-22T10:30:00.000Z',
-            templateItem: {
-              id: 1,
-              templateId: 1,
-              label: 'pH Level',
-              description: 'Check pH value (Target: 8.5-9.5)',
-              createdAt: '2025-04-12T04:56:20.000Z',
-              updatedAt: '2025-04-12T04:56:20.000Z',
-            },
-          },
-          {
-            id: 24,
-            taskId: 11,
-            templateItemId: 2,
-            imageUrl: null,
-            valueFromAI: null,
-            isQualify: null,
-            notes: null,
-            createdAt: '2025-04-22T10:30:00.000Z',
-            updatedAt: '2025-04-22T10:30:00.000Z',
-            templateItem: {
-              id: 2,
-              templateId: 1,
-              label: 'Độ kiềm',
-              description: 'Kiểm tra chỉ số ppm',
-              createdAt: '2025-04-12T04:56:20.000Z',
-              updatedAt: '2025-04-22T13:25:42.000Z',
-            },
-          },
-        ],
-      };
-      setTask(dummyTask);
-    };
+    fetchTaskDetail();
+  }, []);
 
-    fetchTaskDetails(maintenanceTaskId);
-  }, [maintenanceTaskId]);
+  const fetchTaskDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await getMaintenanceTaskById(maintenanceTaskId);
+      setTaskDetail(res);
+    } catch (error) {
+      console.error('Failed to fetch task detail', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const renderItem = ({ item }: { item: WaterReportItem }) => (
-    <View className="mb-2 rounded-md bg-white p-4 shadow-sm">
-      <Text className="text-base font-semibold text-gray-700">{item.templateItem?.label}</Text>
-      {item.templateItem?.description && (
-        <Text className="mb-2 text-sm text-gray-500">{item.templateItem.description}</Text>
-      )}
-      {item.imageUrl && (
-        <Image source={{ uri: item.imageUrl }} className="mb-2 h-32 w-full rounded-md" />
-      )}
-      {item.valueFromAI !== null && (
-        <Text className="text-sm text-gray-800">Giá trị AI: {item.valueFromAI}</Text>
-      )}
-      {item.notes && <Text className="text-sm text-gray-800">Ghi chú: {item.notes}</Text>}
-      <View className="mt-2 flex-row items-center">
-        <Text className="mr-2 text-sm text-gray-600">Đạt yêu cầu:</Text>
-        <Text
-          className={`text-sm font-medium ${item.isQualify === true ? 'text-green-500' : item.isQualify === false ? 'text-red-500' : 'text-gray-800'}`}>
-          {item.isQualify === true ? 'Có' : item.isQualify === false ? 'Không' : 'Chưa xác định'}
-        </Text>
-      </View>
-    </View>
-  );
-
-  if (!task) {
+  if (loading) {
     return (
-      <Text className="flex-1 items-center justify-center">Đang tải thông tin báo cáo nước...</Text>
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
     );
   }
 
+  if (!taskDetail) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text>Không tìm thấy thông tin nhiệm vụ</Text>
+      </View>
+    );
+  }
+  taskDetail.items.map((item)=>{
+    console.log(item.photoUrl)
+  })
   return (
-    <View className="flex-1 bg-gray-100 p-4">
-      <Text className="mb-4 text-xl font-bold text-gray-800">
-        {task.template?.name || 'Báo cáo nước'}
-      </Text>
-
-      <View className="mb-4 rounded-md bg-white p-4 shadow-sm">
-        <Text className="mb-2 text-base font-semibold text-gray-700">Thông tin chung</Text>
-        <View className="mb-2 flex-row items-center">
-          <Text className="mr-2 font-semibold text-gray-600">Trạng thái:</Text>
-          <Text
-            className={`font-medium text-gray-800 ${
-              task.status === 'completed'
-                ? 'text-green-500'
-                : task.status === 'pending'
-                  ? 'text-yellow-500'
-                  : 'text-red-500'
-            }`}>
-            {task.status}
-          </Text>
+    <View className="flex-1 bg-gray-100">
+      <AppHeader
+        title="Chi tiết bảo trì"
+        onBackPress={() => navigation.goBack()}
+      />
+      <ScrollView className="flex-1 p-3">
+        {/* Tên thiết bị */}
+        <View className="mb-4 items-center bg-white rounded-lg p-4 shadow-sm">
+          <Text className="text-xl font-bold text-green-800">{taskDetail.device.deviceName}</Text>
         </View>
-        {task.assignee && (
-          <View className="mb-2 flex-row items-center">
-            <Text className="mr-2 font-semibold text-gray-600">Người thực hiện:</Text>
-            <View className="flex-row items-center">
+
+        {/* Thông tin chung */}
+        <Text className="py-2 text-base font-semibold text-gray-700">Thông tin chung</Text>
+        <View className="rounded-md bg-white shadow-sm">
+          {/* Trạng thái */}
+          <View className="border-b border-gray-200 flex-row items-center gap-4 p-4">
+            <Text className="font-semibold text-gray-600">Trạng thái:</Text>
+            <Text className={`font-medium ${getStatusColor(taskDetail.status)}`}>
+              {getStatusText(taskDetail.status)}
+            </Text>
+          </View>
+
+          {/* Ngày bảo trì */}
+          <View className="border-b border-gray-200 flex-row items-center gap-4 p-4">
+            <Text className="font-semibold text-gray-600">Ngày bảo trì:</Text>
+            <Text className="font-semibold text-gray-800">
+              {formatYMDtoDMY(taskDetail.scheduledDate)}
+            </Text>
+          </View>
+
+          {/* Ghi chú */}
+          {taskDetail.notes && (
+            <View className="border-b border-gray-200 flex-row items-start gap-4 p-4">
+              <Text className="font-semibold text-gray-600">Ghi chú:</Text>
+              <Text className="flex-1 text-gray-800">{taskDetail.notes}</Text>
+            </View>
+          )}
+
+          {/* Người được giao */}
+          {taskDetail.assignedUser && (
+            <View className="flex-row items-center gap-4 p-4">
+              <Text className="font-semibold text-gray-600">Người thực hiện:</Text>
               <Avatar
                 rounded
-                title={task.assignee.fullName.charAt(0).toUpperCase()}
-                containerStyle={{
-                  backgroundColor: '#86939E',
-                  marginRight: 8,
-                  width: 24,
-                  height: 24,
-                }}
-                titleStyle={{ fontSize: 12 }}
+                size={32}
+                source={
+                  taskDetail.assignedUser.profilePicture
+                    ? { uri: taskDetail.assignedUser.profilePicture }
+                    : undefined
+                }
+                title={taskDetail.assignedUser.fullName.charAt(0)}
               />
-              <Text className="font-medium text-gray-800">{task.assignee.fullName}</Text>
+              <Text className="text-gray-800 font-semibold">{taskDetail.assignedUser.fullName}</Text>
             </View>
-          </View>
-        )}
-        {task.boiler && (
-          <View className="mb-2">
-            <Text className="mr-2 font-semibold text-gray-600">Lò hơi:</Text>
-            <Text className="font-medium text-gray-800">{task.boiler.name}</Text>
-            <Text className="text-sm text-gray-500">{task.boiler.location}</Text>
-          </View>
-        )}
-      </View>
-
-      {task.items && task.items.length > 0 && (
-        <View className="mb-4 rounded-md bg-white p-4 shadow-sm">
-          <Text className="mb-2 text-base font-semibold text-gray-700">Chi tiết báo cáo</Text>
-          <FlatList
-            data={task.items}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id.toString()}
-          />
+          )}
         </View>
-      )}
+
+
+
+        {/* Danh sách mục bảo trì */}
+        <Text className="py-2 text-base font-semibold text-gray-700">Danh sách hạng mục</Text>
+        <View className="space-y-4">
+          {taskDetail.items.map((item) => (
+            <View key={item.id} className="bg-white rounded-lg p-4 shadow-sm">
+              <Text className="text-lg font-semibold mb-2">{item.title}</Text>
+
+              {/* Kết quả */}
+              <Text className="text-sm text-gray-600 mb-2">Kết quả: {item.result || 'Chưa có kết quả'}</Text>
+
+              {/* Ảnh */}
+              {item.photoUrl ? (
+                <Image
+                  source={{ uri: item.photoUrl }}
+                  className="h-32 w-32 rounded-md mb-2 border-red-500"
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text className="text-sm text-gray-400 italic">Không có hình ảnh</Text>
+              )}
+
+              {/* Trạng thái */}
+              <Text className="text-sm text-gray-500">Trạng thái: {getStatusText(item.status)}</Text>
+            </View>
+          ))}
+        </View>
+
+      </ScrollView>
     </View>
   );
-};
-
-export default MaintenanceTaskDetailScreen;
+}

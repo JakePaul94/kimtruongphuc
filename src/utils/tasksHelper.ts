@@ -26,3 +26,17 @@ export const getStatusText = (status: string) => {
             return status;
     }
 };
+export const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'text-blue-500'; // Màu xanh cho Hoàn thành
+      case 'pending':
+        return 'text-yellow-500'; // Màu vàng cho Chờ xử lý
+      case 'in_process':
+        return 'text-blue-500'; // Màu xanh dương cho Đang xử lý
+      case 'canceled':
+        return 'text-red-500'; // Màu đỏ cho Hủy bỏ
+      default:
+        return 'text-green-500';
+    }
+  };

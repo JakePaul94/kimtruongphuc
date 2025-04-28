@@ -99,7 +99,7 @@ import { assignUserToBoiler } from '~/apis/boilerApi';
   
     return (
       <View className="flex-1 bg-gray-100">
-        <AppHeader title="Tạo nhân viên mới" onBackPress={navigation.goBack} />
+        <AppHeader title="Thêm nhân viên mới" onBackPress={navigation.goBack} />
         <ScrollView className="flex-1 p-4">
           <View className="bg-white rounded-xl p-6 shadow-sm space-y-4">
             <View>
@@ -253,14 +253,15 @@ import { assignUserToBoiler } from '~/apis/boilerApi';
             </View>
   
             <TouchableOpacity
-              className={`bg-primary p-4 rounded-md mt-6 ${
+            style={{marginTop:50,marginBottom:50}}
+              className={`bg-blue-500 p-4 rounded-md  ${
                 isSubmitting ? 'opacity-50' : ''
               }`}
               onPress={handleSubmit}
               disabled={isSubmitting}
             >
               <Text className="text-white text-center font-semibold">
-                {isSubmitting ? 'Đang tạo...' : 'Tạo nhân viên'}
+                {isSubmitting ? 'Đang tạo...' : 'Thêm nhân viên'}
               </Text>
             </TouchableOpacity>
           </View>

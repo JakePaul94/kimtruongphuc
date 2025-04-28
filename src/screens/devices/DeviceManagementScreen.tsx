@@ -19,6 +19,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import Navbar from '~/components/Navbar';
+import { isNearDate } from '~/utils/deviceHelpers';
 
 dayjs.locale('vi');
 dayjs.extend(relativeTime);
@@ -44,7 +45,9 @@ const DeviceManagementScreen = () => {
   const [boilerFilterOptions, setBoilerFilterOptions] = useState<any[]>([]);
 
   const [openStatusFilter, setOpenStatusFilter] = useState(false);
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'nearInspection' | 'nearMaintenance'>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<
+    'all' | 'nearInspection' | 'nearMaintenance'
+  >('all');
   const [statusFilterOptions] = useState([
     { label: 'Tất cả', value: 'all' },
     { label: 'Gần kiểm định', value: 'nearInspection' },
@@ -67,11 +70,11 @@ const DeviceManagementScreen = () => {
   const buildDeviceTree = useCallback((devices: DeviceAttributes[]): Device[] => {
     const deviceMap: { [key: number]: Device } = {};
     const tree: Device[] = [];
-  
+
     devices.forEach((deviceAttr) => {
       deviceMap[deviceAttr.id] = { ...deviceAttr, children: [] };
     });
-  
+
     devices.forEach((deviceAttr) => {
       const device = deviceMap[deviceAttr.id];
       if (deviceAttr.parentId === null) {
@@ -80,10 +83,10 @@ const DeviceManagementScreen = () => {
         deviceMap[deviceAttr.parentId].children!.push(device);
       }
     });
-  
+
     return tree;
   }, []); // Dependency array có thể rỗng nếu nó không phụ thuộc vào state/props của component
-  
+
   useEffect(() => {
     const fetchDevicesAndBuildTree = async () => {
       setLoading(true);
@@ -98,7 +101,7 @@ const DeviceManagementScreen = () => {
         setLoading(false);
       }
     };
-  
+
     fetchDevicesAndBuildTree();
   }, [devices, buildDeviceTree]);
 
@@ -116,14 +119,6 @@ const DeviceManagementScreen = () => {
     navigation.navigate('CreateDevice', { parentId });
   };
 
-  const isNearDate = (dateString: string | null | undefined): boolean => {
-    if (!dateString) return false;
-    const date = dayjs(dateString);
-    const now = dayjs();
-    const diff = date.diff(now, 'day');
-    return diff > 0 && diff < 15;
-  };
-
   const filterAndRenderDevices = useCallback(() => {
     let filteredDevices = devices;
 
@@ -133,31 +128,59 @@ const DeviceManagementScreen = () => {
       filteredDevices = filteredDevices.filter((device) => !assignedDeviceIds.includes(device.id));
     } else if (selectedBoilerFilter !== 'all') {
       filteredDevices = filteredDevices.filter((device) =>
-        boilerDevices.some((bd) => bd.deviceId === device.id && bd.boilerId === Number(selectedBoilerFilter))
+        boilerDevices.some(
+          (bd) => bd.deviceId === device.id && bd.boilerId === Number(selectedBoilerFilter)
+        )
       );
     }
-
+    const deviceMap = new Map(devices.map((device) => [device.id, device]));
     // Filter by status
     if (selectedStatusFilter === 'nearInspection') {
       filteredDevices = filteredDevices.filter((device) => isNearDate(device.nextInspectionDate));
     } else if (selectedStatusFilter === 'nearMaintenance') {
-      filteredDevices = filteredDevices.filter((device) => isNearDate(device.lastMaintenanceDate));
+      filteredDevices = filteredDevices.filter((device) => isNearDate(device.nextMaintenanceDate));
     }
+    // Bước 2: Thêm tất cả các thiết bị cha (nếu có)
+    const finalDeviceSet = new Map();
 
-    const tree = buildDeviceTree(filteredDevices);
+    // Đầu tiên thêm tất cả thiết bị đã lọc
+    filteredDevices.forEach((device) => {
+      finalDeviceSet.set(device.id, device);
+
+      // Sau đó truy ngược lên cha
+      let parentId = device.parentId;
+      while (parentId) {
+        const parentDevice = deviceMap.get(parentId);
+        if (parentDevice) {
+          finalDeviceSet.set(parentDevice.id, parentDevice);
+          parentId = parentDevice.parentId;
+        } else {
+          break;
+        }
+      }
+    });
+
+    const finalDevices = Array.from(finalDeviceSet.values());
+    const tree = buildDeviceTree(finalDevices);
     setDeviceTree(tree);
   }, [devices, selectedBoilerFilter, selectedStatusFilter, boilerDevices, buildDeviceTree]);
 
   useEffect(() => {
     filterAndRenderDevices();
   }, [filterAndRenderDevices]);
-
+  useEffect(() => {
+    if (openBoilerFilter) setOpenStatusFilter(false);
+  }, [openBoilerFilter]);
+  
+  useEffect(() => {
+    if (openStatusFilter) setOpenBoilerFilter(false);
+  }, [openStatusFilter]);
   const renderDevice = (device: Device, level: number = 0) => {
     const isExpanded = expandedDevices.has(device.id);
     const hasChildren = device.children && device.children.length > 0;
     const statusColor = device.usageStatus === 'Đang hoạt động' ? 'text-green-600' : 'text-red-600';
     const nearInspection = isNearDate(device.nextInspectionDate);
-    const nearMaintenance = isNearDate(device.lastMaintenanceDate);
+    const nearMaintenance = isNearDate(device.nextMaintenanceDate);
 
     return (
       <View key={device.id} style={{ marginLeft: level * 20 }}>
@@ -173,12 +196,13 @@ const DeviceManagementScreen = () => {
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              onPress={() => navigation.navigate('DeviceDetail', { deviceId: device.id })}
-            >
+              onPress={() => navigation.navigate('DeviceDetail', { deviceId: device.id })}>
               <Text className="text-lg font-semibold text-gray-800">{device.deviceName}</Text>
               <Text className={`text-xs ${statusColor}`}>{device.usageStatus}</Text>
-              {nearInspection && <Text className="text-xs text-yellow-600">Sắp kiểm định</Text>}
-              {nearMaintenance && <Text className="text-xs text-orange-600">Sắp bảo trì</Text>}
+              <View className="flex flex-row gap-4">
+                {nearInspection && <Text className="text-xs text-yellow-600">Sắp kiểm định</Text>}
+                {nearMaintenance && <Text className="text-xs text-orange-600">Sắp bảo trì</Text>}
+              </View>
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => navigateToCreateDevice(device.id)} className="ml-2">
@@ -209,8 +233,7 @@ const DeviceManagementScreen = () => {
         <Text className="text-center text-lg text-red-500">{error}</Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="mt-4 rounded-lg bg-blue-500 p-3"
-        >
+          className="mt-4 rounded-lg bg-blue-500 p-3">
           <Text className="font-semibold text-white">Quay lại</Text>
         </TouchableOpacity>
       </View>
@@ -218,11 +241,13 @@ const DeviceManagementScreen = () => {
   }
 
   return (
-    <View className="flex-1 bg-red-400">
-      <Navbar/>
+    <View className="flex-1 ">
+      <Navbar />
 
       {/* Filters */}
-      <View style={{borderColor:"rgba(0,222,0,0.2)",borderTopWidth:0.2,borderBottomWidth:0.2}} className="px-4 py-2  bg-white z-20 shadow-sm">
+      <View
+        style={{ borderColor: 'rgba(0,222,0,0.2)', borderTopWidth: 0.2, borderBottomWidth: 0.2 }}
+        className="z-20 bg-white  px-4 py-2 shadow-sm">
         <View className="flex-row gap-4 space-x-2">
           <View className="flex-1">
             <Text className="mb-1 text-sm font-medium text-gray-600">Lọc theo lò hơi</Text>
@@ -231,7 +256,10 @@ const DeviceManagementScreen = () => {
               value={selectedBoilerFilter}
               items={boilerFilterOptions}
               setOpen={setOpenBoilerFilter}
-              setValue={setSelectedBoilerFilter}
+              setValue={(callback) => {
+                const newValue = callback(selectedBoilerFilter);
+                setSelectedBoilerFilter(newValue);
+              }}
               setItems={setBoilerFilterOptions}
               placeholder="Tất cả lò hơi"
               style={{ borderColor: '#E5E7EB' }}
@@ -256,7 +284,7 @@ const DeviceManagementScreen = () => {
         </View>
       </View>
 
-      <View className="flex-1 bg-red-400 p-4">
+      <View className="flex-1 bg-gray-50 p-4">
         <FlatList
           data={deviceTree}
           renderItem={({ item }) => renderDevice(item)}

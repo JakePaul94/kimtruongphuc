@@ -1,6 +1,7 @@
 import { DeviceAttributes } from "~/types/deviceType";
 import { useMemo } from 'react';
 import { BoilerAttributes, BoilerDevicesAttributes } from "~/types/boilerType";
+import dayjs from "dayjs";
 export const getDevicesDueSoon = (
     devices: DeviceAttributes[],
     dateKey: 'nextMaintenanceDate' | 'nextInspectionDate',
@@ -111,3 +112,16 @@ const buildDeviceTree = (devices: DeviceAttributes[]) => {
 
   return roots;
 };
+export const isNearDate = (dateString: string | null | undefined): boolean => {
+    if (!dateString) return false;
+    const date = dayjs(dateString);
+   
+    const now = dayjs();
+    
+    const diff = date.diff(now, 'day');
+    if (diff > 0 && diff < 15){
+      console.log(now)
+      console.log(date)
+    }
+    return diff > 0 && diff < 15;
+  };

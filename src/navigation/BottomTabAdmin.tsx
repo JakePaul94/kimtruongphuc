@@ -7,7 +7,9 @@ import SettingScreen from '~/screens/SettingScreen';
 import TrackingScreen from '~/screens/TrackingScreen';
 import DeviceManagementScreen from '~/screens/devices/DeviceManagementScreen';
 import AIScreen from '~/screens/AIScreen';
-import TaskManagementScreen from '~/screens/tasks/TasksManagementScreen';
+import TaskManagementScreen from '~/screens/roleBased/admin/TasksManagementScreen';
+
+
 
 
 export type AdminTabParamList = {
@@ -36,17 +38,24 @@ export default function BottomTabAdmin() {
             case 'Tracking':
               return <AntDesign name="linechart" size={size} color={color} />;
               case 'AI':
-              return  <MaterialCommunityIcons name="brain" size={size} color={color} />;
+              return  <MaterialCommunityIcons name="details" size={size} color={color} />;
           }
         },
-        tabBarActiveTintColor: 'green',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: '#0466c8',
+        tabBarInactiveTintColor: 'rgba(0,0,0,0.3)',
         headerShown: false, tabBarStyle: {
           // Style cho toàn bộ tab bar
-          backgroundColor: '#f2f2f2',
+          backgroundColor: '#fff',
           borderTopWidth: 1,
           borderTopColor: '#ccc',
-          height: 60, // Điều chỉnh chiều cao nếu cần
+          height: 70, 
+          alignItems:"center"
+         // Điều chỉnh chiều cao nếu cần
+        },
+        // Thêm dòng này để căn giữa icon theo chiều dọc
+        tabBarIconStyle: {
+          marginTop: 8,
+          marginBottom: 2,
         },
       })}
     >

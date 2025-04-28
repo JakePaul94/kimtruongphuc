@@ -156,7 +156,7 @@ export type WaterReportTask = {
   createdAt: string;
   updatedAt: string;
   boiler:BoilerAttributes;
-  assignee?: UserAttributes | null;
+  assignedUser?: UserAttributes | null;
   creator?: UserAttributes | null;
   template: {
     id: number;

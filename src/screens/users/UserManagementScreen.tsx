@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppStore } from '~/store/useAppStore';
 import { useEffect, useState, useCallback } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { formatDateFromIsoToDDMMYY } from '~/utils/timeHelper';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -109,7 +110,7 @@ const UserManagementScreen = () => {
               <View className="flex-row items-center mt-1">
                 <Text className="text-xs text-gray-500">{item.department}</Text>
                 <Text className="text-xs text-gray-400 mx-1">•</Text>
-                <Text className="text-xs text-gray-500">{item.registrationDate}</Text>
+                <Text className="text-xs text-gray-500">{formatDateFromIsoToDDMMYY(item.registrationDate)}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color="gray" />
